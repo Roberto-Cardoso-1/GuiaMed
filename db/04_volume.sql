@@ -1,111 +1,89 @@
 -- ============================================================================
--- GuiaMed | 04_volume.sql | Geracao de volume para o plano de otimizacao
--- Rodar DEPOIS de 01/02/03. Parametrizar @N conforme a maquina.
---
--- Gargalos alvo (docs/seguranca.md, secao Plano de otimizacao):
---   Q1 - busca vetorial top-5 em bula_chunk (scan + sort de distancias)
---   Q2 - relatorio de uso agregando consulta_log por dia/modelo (scan sequencial)
---
--- Volume alvo padrao: 1.000.000 de linhas em consulta_log
---                     50.000 vetores sinteticos em bula_chunk (~10-20 min)
+-- GuiaMed (app de acessibilidade) | 04_volume.sql
+-- Geracao de massa para o plano de otimizacao (ver docs/seguranca.md §4)
+--   - ~1.000.000 linhas em consulta_log (batches de 20k)
+--   - 50.000 vetores sinteticos em bula_chunk
+-- Rodar DEPOIS de 01_ddl.sql e 03_seed.sql. Demora alguns minutos.
 -- ============================================================================
 USE GuiaMed;
 GO
 SET NOCOUNT ON;
 
 -- ---------------------------------------------------------------------------
--- 1) Massa em consulta_log (rapido: ~1M linhas em segundos/minutos)
+-- 0) Dispositivos sinteticos p/ dar cardinalidade ao log (1.000 aparelhos)
 -- ---------------------------------------------------------------------------
-DECLARE @N bigint = 1000000;      -- ajuste o volume aqui
-DECLARE @batch int = 20000;
-
-TRUNCATE TABLE dbo.feedback;
-DELETE FROM dbo.consulta_log;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.usuario)
-    INSERT INTO dbo.usuario (telegram_id, nome)
-    VALUES (N'9990001', N'Usuario Sintetico 1'), (N'9990002', N'Usuario Sintetico 2');
-
-DECLARE @u1 bigint = (SELECT TOP 1 id FROM dbo.usuario ORDER BY id);
-DECLARE @restantes bigint = @N;
-
-WHILE @restantes > 0
-BEGIN
-    INSERT INTO dbo.consulta_log
-        (usuario_id, canal, pergunta, resposta, scope_guard, modelo,
-         tokens_in, tokens_out, custo_usd, criado_em)
-    SELECT TOP (@batch)
-           @u1 + (ABS(CHECKSUM(NEWID())) % 2),
-           'telegram',
-           CONCAT(N'qual a posologia do medicamento sintetico #', ABS(CHECKSUM(NEWID())) % 50000),
-           N'Resposta ficticia gerada para teste de carga.',
-           CASE ABS(CHECKSUM(NEWID())) % 20 WHEN 0 THEN 'out_of_scope' ELSE 'in_scope' END,
-           CASE ABS(CHECKSUM(NEWID())) % 3 WHEN 0 THEN 'gpt-4o-mini-ft' ELSE 'gpt-4o-mini' END,
-           1200 + ABS(CHECKSUM(NEWID())) % 800,
-           150  + ABS(CHECKSUM(NEWID())) % 300,
-           CAST(0.0003 AS decimal(9,6)),
-           DATEADD(second, -ABS(CHECKSUM(NEWID())) % 7776000, sysutcdatetime()) -- ultimos 90 dias
-      FROM sys.all_objects a CROSS JOIN sys.all_objects b;
-
-    SET @restantes -= @batch;
-END
+;WITH t AS (
+    SELECT TOP (1000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+    FROM (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) a(x)
+    CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) b(x)
+    CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) c(x)
+)
+INSERT INTO dbo.dispositivo (device_id)
+SELECT N'vol_dev_' + RIGHT(N'0000' + CAST(n AS varchar(5)), 5)
+  FROM t
+ WHERE NOT EXISTS (SELECT 1 FROM dbo.dispositivo d WHERE d.device_id = N'vol_dev_' + RIGHT(N'0000' + CAST(n AS varchar(5)), 5));
 GO
 
 -- ---------------------------------------------------------------------------
--- 2) Vetores sinteticos em bula_chunk (pesado: gerar em horario ocioso)
---    Replica os 144 chunks reais com sufixo de versao e embedding aleatorio
---    normalizado no formato JSON aceito por VECTOR(1536).
+-- 1) 1.000.000 de linhas em consulta_log (50 batches x 20.000)
+--    distribuidas em 90 dias, ~3% com alerta de alergia, 3 modelos
 -- ---------------------------------------------------------------------------
-DECLARE @vetores_alvo int = 50000;   -- ajuste aqui
-DECLARE @lote int = 500;
-DECLARE @feitos int = 0;
-DECLARE @template nvarchar(max);
-
-WHILE @feitos < @vetores_alvo
+DECLARE @batch int = 0;
+WHILE @batch < 50
 BEGIN
-    -- monta UM embedding aleatorio por iteracao do lote e replica em 500 chunks
-    WITH nums AS (
-        SELECT TOP (1536) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
-        FROM sys.all_objects
+    ;WITH t AS (
+        SELECT TOP (20000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+        FROM (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) a(x)
+        CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) b(x)
+        CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) c(x)
+        CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) d(x)
+        CROSS JOIN (VALUES (0),(0)) e(x)
     )
-    SELECT @template = '[' + STRING_AGG(CAST(CAST(RAND(CHECKSUM(NEWID())) AS real) AS varchar(20)), ',') + ']'
-    FROM nums;
+    INSERT INTO dbo.consulta_log
+        (dispositivo_id, canal, entrada_ocr, resposta_voz, alerta_alergia,
+         extracao_json, modelo, tokens_in, tokens_out, custo_usd, criado_em)
+    SELECT
+        1 + ABS(CHECKSUM(NEWID())) % 1000,
+        'app_voz',
+        N'texto ocr sintetico volume ' + CAST(n AS varchar(10)),
+        N'resposta falada sintetica volume ' + CAST(n AS varchar(10)),
+        CASE WHEN ABS(CHECKSUM(NEWID())) % 100 < 3 THEN 1 ELSE 0 END,
+        N'{"nome_comercial":"Pressormin","principio_ativo":"losaprilato de sódio","validade":null}',
+        CASE ABS(CHECKSUM(NEWID())) % 3
+             WHEN 0 THEN 'gpt-4o-mini'
+             WHEN 1 THEN 'ft:gpt-4o-mini:ocr-extractor'
+             ELSE 'text-embedding-3-small' END,
+        100 + ABS(CHECKSUM(NEWID())) % 800,
+        50  + ABS(CHECKSUM(NEWID())) % 200,
+        CAST((ABS(CHECKSUM(NEWID())) % 100) / 1000000.0 AS decimal(9,6)),
+        DATEADD(minute, -(ABS(CHECKSUM(NEWID())) % 129600), sysutcdatetime())
+    FROM t;
 
-    INSERT INTO dbo.bula_chunk (medicamento_id, secao, conteudo, embedding)
-    SELECT TOP (@lote)
-           (ABS(CHECKSUM(NEWID())) % 24) + 1,
-           'indicacao',
-           CONCAT(N'Chunk sintetico de volume #', ABS(CHECKSUM(NEWID())) % 1000000,
-                  N'. Conteudo ficticio apenas para teste de desempenho da busca vetorial.'),
-           CAST(@template AS VECTOR(1536))
-      FROM sys.all_objects;
-
-    SET @feitos += @lote;
-    IF @feitos % 5000 = 0 PRINT CONCAT('... ', @feitos, ' vetores inseridos');
+    SET @batch += 1;
+    PRINT 'consulta_log: batch ' + CAST(@batch AS varchar(3)) + '/50';
 END
 GO
 
 -- ---------------------------------------------------------------------------
--- 3) Queries de benchmark (rodar com SET STATISTICS IO, TIME ON antes/depois)
+-- 2) 50.000 vetores sinteticos (VECTOR(1536) valido, padrao com jitter por linha)
+--    Serve para medir o full scan da busca vetorial (Q1), nao a semantica.
 -- ---------------------------------------------------------------------------
--- Q1 - busca vetorial (substituir @q por um embedding real ou sintetico):
---   DECLARE @q VECTOR(1536) = (SELECT TOP 1 embedding FROM dbo.bula_chunk
---                              WHERE embedding IS NOT NULL);
---   EXEC dbo.usp_buscar_bulas @q, 5;
---
--- Q2 - relatorio de uso por dia/modelo:
---   SELECT CAST(criado_em AS date) AS dia, modelo, COUNT_BIG(*) AS qtd,
---          SUM(tokens_in) AS tokens_in, SUM(tokens_out) AS tokens_out,
---          SUM(custo_usd) AS custo
---     FROM dbo.consulta_log
---    GROUP BY CAST(criado_em AS date), modelo
---    ORDER BY dia;
---
--- Otimizacoes planejadas (aplicar e medir de novo):
---   Q1: pre-filtro por medicamento (WHERE medicamento_id = X) + indice vetorial:
---       CREATE VECTOR INDEX ix_chunk_vec ON bula_chunk(embedding)
---       WITH (METRIC = 'cosine', TYPE = 'DiskANN');
---   Q2: indice columnstore para agregacao analitica:
---       CREATE NONCLUSTERED COLUMNSTORE INDEX ix_log_cs
---       ON dbo.consulta_log (criado_em, modelo, tokens_in, tokens_out, custo_usd);
--- ============================================================================
+DECLARE @vbase nvarchar(max) = N'[' + REPLICATE(N'0.11,0.23,0.37,0.41,0.53,0.67,0.71,0.83,', 191) + N'0.83]';
+
+;WITH t AS (
+    SELECT TOP (50000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS n
+    FROM (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) a(x)
+    CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) b(x)
+    CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) c(x)
+    CROSS JOIN (VALUES (0),(0),(0),(0),(0),(0),(0),(0),(0),(0)) d(x)
+    CROSS JOIN (VALUES (0),(0),(0),(0),(0)) e(x)
+)
+INSERT INTO dbo.bula_chunk (medicamento_id, secao, conteudo, embedding)
+SELECT 1 + (n % 24), 'indicacao',
+       N'chunk sintetico de volume ' + CAST(n AS varchar(10)),
+       CAST(REPLACE(@vbase, '0.11', CAST(0.05 + (n % 20) / 100.0 AS varchar(10))) AS VECTOR(1536))
+  FROM t;
+GO
+
+PRINT 'Volume gerado: ~1.000.000 logs e ~50.000 vetores. Rode o plano de otimizacao (docs/seguranca.md §4).';
+GO
