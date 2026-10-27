@@ -3,7 +3,7 @@
 -- Alvo: SQL Server 2025 (tipo VECTOR nativo) local em Docker ou Azure SQL DB
 -- ============================================================================
 -- Subir SQL Server 2025 local (Docker):
---   docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=GuiaMed!Dev123" `
+--   docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<DefinaUmaSenhaForte!Aqui>" `
 --     -p 1433:1433 --name guiamed-sql mcr.microsoft.com/mssql/server:2025-latest
 -- ============================================================================
 

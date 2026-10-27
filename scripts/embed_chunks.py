@@ -9,7 +9,7 @@ Preenche dbo.bula_chunk.embedding com OpenAI text-embedding-3-small (1536 dims).
 Uso:
     pip install openai pyodbc
     set OPENAI_API_KEY=sk-...        (Windows)
-    set GUIAMED_SQL=Driver={ODBC Driver 18 for SQL Server};Server=localhost,1433;Database=GuiaMed;UID=sa;PWD=GuiaMed!Dev123;TrustServerCertificate=yes
+    set GUIAMED_SQL=Driver={ODBC Driver 18 for SQL Server};Server=localhost,1433;Database=GuiaMed;UID=sa;PWD=<sua-senha>;TrustServerCertificate=yes
     python scripts/embed_chunks.py
 """
 import os

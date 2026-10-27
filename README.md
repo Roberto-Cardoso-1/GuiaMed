@@ -57,7 +57,7 @@ docs/                canvas, arquitetura, seguran√ßa, dados, ataques, apresenta√
 
 ```powershell
 # 1) Banco: SQL Server 2025 em Docker
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=GuiaMed!Dev123" -p 1433:1433 -d --name guiamed-sql mcr.microsoft.com/mssql/server:2025-latest
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=<DefinaUmaSenhaForte!Aqui>" -p 1433:1433 -d --name guiamed-sql mcr.microsoft.com/mssql/server:2025-latest
 
 # 2) Criar, popular e proteger (nesta ordem, via sqlcmd ou Azure Data Studio):
 #    db/01_ddl.sql -> db/03_seed.sql -> db/02_security.sql
