@@ -9,7 +9,7 @@
 
 - **Problema:** quem não enxerga (ou enxerga pouco) não consegue ler bula, embalagem nem receita. Erro de medicamento nesse público não é inconveniente — é risco de vida.
 - **O que muda quando funciona:** autonomia. A pessoa identifica o remédio em mãos em segundos, sem depender de terceiros, com a informação vindo **somente de bulas cadastradas** (fictícias, ver [`docs/dados.md`](docs/dados.md)) — sem fonte, sem resposta.
-- **Interface:** app Android "zero interface" (tela = câmera, comandos por toques + voz/TTS) falando com uma **API sem tela** — formato permitido pelo enunciado; não é SaaS nem site. O GuiaMed **não** dá diagnóstico nem substitui médico/farmacêutico.
+- **Interface:** app Android nativo "zero interface" (tela = câmera, comandos por toques + voz/TTS) falando com uma **API sem tela** — não é SaaS nem site (interface nativa validada com a professora). O GuiaMed **não** dá diagnóstico nem substitui médico/farmacêutico.
 
 ## Arquitetura (resumo)
 

@@ -10,7 +10,7 @@
 
 **Repositório:** https://github.com/Roberto-Cardoso-1/GuiaMed — branch `main`, repositório público. **Sem chaves de API ou senhas no código** (todas via variáveis de ambiente; ver `README.md` e `backend/.env.example`).
 
-> Interface escolhida: **app Android por voz ("zero interface") + API sem tela (FastAPI)** — formato permitido pelo enunciado ("API sem tela"); não é SaaS, aplicação web nem site. Dados **100% fictícios** (declaração em [docs/dados.md](docs/dados.md)).
+> Interface escolhida: **app Android nativo por voz ("zero interface") + API sem tela (FastAPI)** — não é SaaS, aplicação web nem site; interface nativa **validada previamente com a professora**. Dados **100% fictícios** (declaração em [docs/dados.md](docs/dados.md)).
 
 ---
 
