@@ -1,0 +1,24 @@
+# Ambiente
+.venv/
+__pycache__/
+*.pyc
+
+# Segredos — NUNCA commitar
+.env
+*.env
+appsettings*.json
+secrets.*
+*.pem
+*.key
+
+# IDE
+.idea/
+.vscode/
+
+# SO
+Thumbs.db
+desktop.ini
+
+# Artefatos grandes/locais
+auditoria/
+backups/
