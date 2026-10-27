@@ -4,8 +4,6 @@
 **Componentes (nome completo – matrícula):**
 1. João Roberto Santos Cardoso – 231070711
 2. Gabriel de Souza Nascimento – 231071404
-3. [PENDENTE – nome completo + matrícula]
-4. [PENDENTE – nome completo + matrícula]
 
 **Disciplinas cursadas:** Projeto de Inteligência Artificial **e** Segurança e Otimização de BD → entregamos **Parte comum + Parte de IA + Parte de Segurança + Parte de integração** (valem nas duas disciplinas).
 

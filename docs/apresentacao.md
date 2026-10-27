@@ -14,18 +14,18 @@
   Telegram → n8n → **Scope-Guard (fine-tuned)** → **RAG** (embedding → SQL Server `VECTOR`) → **GPT-4o-mini** → pós-checagem → resposta → **log de auditoria**.
 - Destacar as 4 coisas que a banca vai procurar: LLM escolhido, RAG (fontes/chunking/embeddings/banco vetorial/busca), fine-tuning, fluxo n8n.
 
-**3:20–4:10 — Decisões e números (membro 3)**
+**3:20–4:10 — Decisões e números (membro 1)**
 - Por que GPT-4o-mini (custo/qualidade/privacidade): **US$ 0,44 por 1.000 usos** (~R$2,50).
 - Base de 24 bulas **fictícias** (aviso em cada arquivo) — LGPD ok por construção.
 - Fine-tuning (Scope-Guard): 240 exemplos, F1 macro, custo do treino ~US$ 0,43.
 
-**4:10–5:00 — Ponto difícil e fechamento (membro 4)**
+**4:10–5:00 — Ponto difícil e fechamento (membro 2)**
 - Onde a IA erra: alucinação, fora de escopo, prompt injection → como medimos (fidelidade ≥95%, F1 ≥0,95, bloqueio ≥95% com suíte de 30 ataques).
 - Frase final: "Sem fonte, sem resposta — se não está na bula, o GuiaMed não responde."
 
 ## Preparação rápida
 
-- [ ] Adicionar os integrantes no README.
+- [x] Adicionar os integrantes no README.
 - [ ] Exportar o diagrama Mermaid como imagem (draw.io/Mermaid Live) ou abrir o `.md` no GitHub renderizado.
 - [ ] Testar o banco local com `db/01` → `db/03` → `db/02` antes da aula (demo opcional de um SELECT mascarado impressiona em Segurança).
 - [ ] Cada membro deve saber defender: por que 1 chunk = 1 seção; por que fine-tuning para classificação e não para "ensinar medicina"; por que DENY no schema inteiro.
