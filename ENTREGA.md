@@ -4,6 +4,7 @@
 **Componentes (nome completo – matrícula):**
 1. João Roberto Santos Cardoso – 231070711
 2. Gabriel de Souza Nascimento – 231071404
+3. Daniel Queiroga Santana Martins – 231070654
 
 **Disciplinas cursadas:** Projeto de Inteligência Artificial **e** Segurança e Otimização de BD → entregamos **Parte comum + Parte de IA + Parte de Segurança + Parte de integração** (valem nas duas disciplinas).
 

@@ -14,7 +14,7 @@
   Telegram → n8n → **Scope-Guard (fine-tuned)** → **RAG** (embedding → SQL Server `VECTOR`) → **GPT-4o-mini** → pós-checagem → resposta → **log de auditoria**.
 - Destacar as 4 coisas que a banca vai procurar: LLM escolhido, RAG (fontes/chunking/embeddings/banco vetorial/busca), fine-tuning, fluxo n8n.
 
-**3:20–4:10 — Decisões e números (membro 1)**
+**3:20–4:10 — Decisões e números (membro 3)**
 - Por que GPT-4o-mini (custo/qualidade/privacidade): **US$ 0,44 por 1.000 usos** (~R$2,50).
 - Base de 24 bulas **fictícias** (aviso em cada arquivo) — LGPD ok por construção.
 - Fine-tuning (Scope-Guard): 240 exemplos, F1 macro, custo do treino ~US$ 0,43.
