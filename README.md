@@ -1,6 +1,6 @@
 # GuiaMed 💊🔊
 
-**Grupo GuiaMed** — **Componentes:** João Roberto Santos Cardoso (231070711) · Gabriel de Souza Nascimento (231071404) · Daniel Queiroga Santana Martins (231070654)
+**Grupo GuiaMed** — **Componentes:** João Roberto Santos Cardoso (231070711) · Gabriel de Souza Nascimento (231071404) · Daniel Queiroga Santana Martins (231070654) • Pedro Henrique Freitas Couto (231071331)
 **Disciplinas:** Projeto de Inteligência Artificial + Segurança e Otimização de BD (entrega completa nas duas)
 
 ## O que é
