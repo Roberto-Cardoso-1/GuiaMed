@@ -1,6 +1,6 @@
 # GuiaMed 💊
 
-**Grupo:** [NOME DO GRUPO] · **Componentes:** [Nome completo 1 – matrícula], [Nome completo 2 – matrícula], [Nome completo 3 – matrícula], [Nome completo 4 – matrícula]
+**Grupo GuiaMed** — **Componentes:** João Roberto Santos Cardoso (231070711) · Gabriel de Souza Nascimento (231071404) · [Nome completo 3 – matrícula] · [Nome completo 4 – matrícula]
 **Disciplinas:** Projeto de Inteligência Artificial + Segurança e Otimização de BD (entrega completa nas duas)
 
 ## O que é

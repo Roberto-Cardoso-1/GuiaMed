@@ -1,16 +1,15 @@
 # ENTREGA — GuiaMed
 
-**Grupo:** [NOME DO GRUPO]
+**Grupo:** GuiaMed
 **Componentes (nome completo – matrícula):**
-1. [Nome completo 1 – matrícula]
-2. [Nome completo 2 – matrícula]
-3. [Nome completo 3 – matrícula]
-4. [Nome completo 4 – matrícula]
-5. [Nome completo 5 – matrícula]
+1. João Roberto Santos Cardoso – 231070711
+2. Gabriel de Souza Nascimento – 231071404
+3. [PENDENTE – nome completo + matrícula]
+4. [PENDENTE – nome completo + matrícula]
 
 **Disciplinas cursadas:** Projeto de Inteligência Artificial **e** Segurança e Otimização de BD → entregamos **Parte comum + Parte de IA + Parte de Segurança + Parte de integração** (valem nas duas disciplinas).
 
-**Repositório:** [colar aqui o link do GitHub após publicar] — branch `main`, repositório público. **Sem chaves de API ou senhas no código** (todas via variáveis de ambiente; ver `README.md`).
+**Repositório:** https://github.com/Roberto-Cardoso-1/GuiaMed — branch `main`, repositório público. **Sem chaves de API ou senhas no código** (todas via variáveis de ambiente; ver `README.md`).
 
 > Interface escolhida: **bot de Telegram** (permitido pelo enunciado — não é SaaS/web). Dados **100% fictícios** (declaração em [docs/dados.md](docs/dados.md)).
 
