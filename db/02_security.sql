@@ -15,7 +15,10 @@ CREATE ROLE rl_app_ia;         -- identidade do fluxo n8n/IA (privilegio minimo)
 GO
 
 -- Login/usuario de servico usado pelo n8n (a "IA" vista pelo banco)
-CREATE LOGIN svc_guiamed_ia WITH PASSWORD = 'TROCAR-ESTA-SENHA!123';
+-- SENHA NAO FICA NO REPOSITORIO: passe por fora na hora de rodar:
+--   sqlcmd -v IA_PWD="SuaSenhaForte!123" -i db/02_security.sql
+-- (SSMS/Azure Data Studio: habilite o modo SQLCMD, ou troque $(IA_PWD) manualmente.)
+CREATE LOGIN svc_guiamed_ia WITH PASSWORD = N'$(IA_PWD)';
 CREATE USER app_ia FOR LOGIN svc_guiamed_ia;
 ALTER ROLE rl_app_ia ADD MEMBER app_ia;
 GO
@@ -89,7 +92,7 @@ GO
 -- Local (SQL Server 2025): descomentar e executar como sysadmin:
 -- ---------------------------------------------------------------------------
 -- USE master;
--- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'TROCAR-ESTA-SENHA!123';
+-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = '<sua-senha-forte-aqui>';
 -- CREATE CERTIFICATE GuiaMedTdeCert WITH SUBJECT = 'GuiaMed TDE';
 -- USE GuiaMed;
 -- CREATE DATABASE ENCRYPTION KEY WITH ALGORITHM = AES_256
