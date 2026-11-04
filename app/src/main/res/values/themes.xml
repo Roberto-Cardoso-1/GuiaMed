@@ -1,0 +1,27 @@
+<resources>
+    <!-- Tema base AppCompat (sem dependência de Material Components) -->
+    <style name="Theme.GuiaMed" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+    <style name="Theme.GuiaMed.FullScreen" parent="Theme.GuiaMed">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+
+    <!-- TextAppearance para alto contraste (AppCompat) -->
+    <style name="TextAppearance.GuiaMed.HighContrast" parent="TextAppearance.AppCompat.Title">
+        <item name="android:textColor">@color/yellow_high_contrast</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.GuiaMed.Danger" parent="TextAppearance.GuiaMed.HighContrast">
+        <item name="android:textColor">@color/white</item>
+    </style>
+</resources>

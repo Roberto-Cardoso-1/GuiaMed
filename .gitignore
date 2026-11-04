@@ -1,24 +1,35 @@
-# Ambiente
-.venv/
-__pycache__/
-*.pyc
+# Gradle
+.gradle/
+build/
+*/build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Segredos — NUNCA commitar
-.env
-*.env
-appsettings*.json
-secrets.*
-*.pem
-*.key
+# Local configuration
+local.properties
 
 # IDE
 .idea/
+*.iml
+*.ipr
+*.iws
 .vscode/
+*.swp
 
-# SO
+# OS
+.DS_Store
 Thumbs.db
-desktop.ini
 
-# Artefatos grandes/locais
-auditoria/
-backups/
+# Keystores
+*.jks
+*.keystore
+
+# Legacy Tesseract data (ML Kit is used by V1)
+app/src/main/assets/tessdata/*.traineddata
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
