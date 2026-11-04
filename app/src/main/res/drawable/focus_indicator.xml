@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Círculo externo -->
+    <path
+        android:pathData="M40,4 A36,36 0 1,1 39.99,4 Z"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600"
+        android:fillColor="#00000000" />
+    <!-- Linhas de foco -->
+    <path
+        android:pathData="M40,4 L40,16"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <path
+        android:pathData="M40,64 L40,76"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <path
+        android:pathData="M4,40 L16,40"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <path
+        android:pathData="M64,40 L76,40"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <!-- Pontos nos cantos -->
+    <path
+        android:pathData="M16,16 L28,16 M16,16 L16,28"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <path
+        android:pathData="M52,16 L64,16 M64,16 L64,28"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <path
+        android:pathData="M16,52 L28,52 M16,64 L16,52"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+    <path
+        android:pathData="M52,64 L64,64 M64,52 L64,64"
+        android:strokeWidth="3"
+        android:strokeColor="#FFD600" />
+</vector>

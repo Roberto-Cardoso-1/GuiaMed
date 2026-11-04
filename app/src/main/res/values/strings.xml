@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GuiaMed</string>
+    <string name="app_opened">GuiaMed aberto. Aponte a câmera para o remédio e toque uma vez na tela para ler. Toque três vezes seguidas na tela para falar o nome de um remédio ao qual você tem alergia. Ou toque duas vezes para ler uma receita. Toque quatro vezes para repetir as instruções.</string>
+    <string name="reading_package">Lendo embalagem...</string>
+    <string name="allergy_mode">Diga o nome do remédio ou componente ao qual você tem alergia.</string>
+    <string name="allergy_registered">Alergia registrada com sucesso.</string>
+    <string name="allergy_error">Erro ao registrar alergia. Tente novamente.</string>
+    <string name="network_error">Sem conexão com o servidor, tentando novamente...</string>
+    <string name="ocr_error">Não foi possível ler o texto. Tente novamente com melhor iluminação.</string>
+    <string name="no_text_found">Nenhum texto encontrado na imagem.</string>
+    <string name="prescription_mode">Modo receita. Aponte a câmera para a receita. Vou capturar quando terminar esta instrução.</string>
+    <string name="danger_alert">ATENÇÃO: Perigo detectado!</string>
+    <string name="expired_medicine">Este medicamento está vencido.</string>
+    <string name="allergy_alert">ALERTA DE ALERGIA: Você tem alergia a este medicamento.</string>
+    <string name="camera_permission_rationale">O GuiaMed precisa da câmera para ler embalagens e receitas de remédios.</string>
+    <string name="audio_permission_rationale">O GuiaMed precisa do microfone para registrar alergias por voz.</string>
+    <string name="permission_request_camera">Vou pedir permissão para usar a câmera. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
+    <string name="permission_request_audio">Vou pedir permissão para usar o microfone. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
+    <string name="repeat_instructions">Um toque: ler embalagem. Dois toques: ler receita. Três toques: cadastrar alergia por voz. Quatro toques: repetir instruções.</string>
+</resources>
