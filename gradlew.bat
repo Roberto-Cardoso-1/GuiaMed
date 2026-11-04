@@ -51,10 +51,12 @@ set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 @rem Execute Gradle
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-classpath" "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
+set EXIT_CODE=%ERRORLEVEL%
 
 :end
 @rem End local scope for the variables with windows NT shell
-if "%OS%"=="Windows_NT" endlocal
+if "%OS%"=="Windows_NT" endlocal & exit /b %EXIT_CODE%
+exit /b %EXIT_CODE%
 
 :fail
 if "%OS%"=="Windows_NT" endlocal
