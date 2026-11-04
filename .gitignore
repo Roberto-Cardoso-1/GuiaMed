@@ -1,3 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets — never commit
+.env
+*.env
+!.env.example
+appsettings*.json
+secrets.*
+*.pem
+*.key
+
 # Gradle
 .gradle/
 build/
@@ -19,6 +33,7 @@ local.properties
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Keystores
 *.jks
@@ -33,3 +48,7 @@ app/src/main/assets/tessdata/*.traineddata
 # Temporary files
 *.tmp
 *.temp
+
+# Local or sensitive artifacts
+auditoria/
+backups/

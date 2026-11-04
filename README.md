@@ -31,7 +31,7 @@ O parser do backend normaliza erros comuns de OCR, faz busca aproximada de medic
 Use Python 3.11 ou 3.12:
 
 ```powershell
-cd C:\meu-sistema\GuiaMed\backend
+cd backend
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 python main.py
@@ -44,7 +44,6 @@ python main.py
 Use JDK 17 e Android SDK 34:
 
 ```powershell
-cd C:\meu-sistema\GuiaMed
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat assembleDebug
 ```
@@ -65,7 +64,7 @@ Os modelos Android usam `@SerializedName` e permanecem sincronizados com essas c
 ## Validação
 
 ```powershell
-cd C:\meu-sistema\GuiaMed\backend
+cd backend
 python -m unittest -v test_parser.py
 ```
 
@@ -77,4 +76,10 @@ Os testes cobrem as regressões de Dipirona com erros de OCR, Nimesulida aproxim
 - Consultas PostgreSQL são parametrizadas.
 - O modo mock existe apenas via `GuiaMedRepository.createWithMock()` para testes explícitos; a aplicação V1 usa a API real.
 - O app solicita somente câmera e microfone em tempo de execução.
+
+## Documentação do projeto
+
+Os documentos acadêmicos e de arquitetura existentes foram preservados em
+[`docs/`](docs/), junto de [`ENTREGA.md`](ENTREGA.md), dados de demonstração e
+scripts auxiliares.
 

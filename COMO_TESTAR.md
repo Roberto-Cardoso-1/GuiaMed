@@ -10,7 +10,7 @@
 Antes do teste mobile:
 
 ```powershell
-cd C:\meu-sistema\GuiaMed\backend
+cd backend
 python -m unittest -v test_parser.py
 python main.py
 ```
@@ -18,7 +18,6 @@ python main.py
 Em outro terminal:
 
 ```powershell
-cd C:\meu-sistema\GuiaMed
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat installDebug
 ```
