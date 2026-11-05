@@ -1,7 +1,7 @@
 import unittest
 from datetime import date
 
-from main import normalize_ocr, parse_recipe, parse_verification
+from main import load_dcb_catalog, normalize_ocr, parse_recipe, parse_verification
 
 
 class MedicationParserTests(unittest.TestCase):
@@ -51,6 +51,23 @@ class MedicationParserTests(unittest.TestCase):
         )
         self.assertEqual("Rosuvastatina Cálcica", response.nome)
         self.assertEqual("20mg", response.miligramas)
+
+    def test_loads_broad_official_anvisa_catalog(self):
+        exact_index, _ = load_dcb_catalog()
+        self.assertGreater(len(exact_index), 10_000)
+        self.assertIn("ATORVASTATINA", exact_index)
+
+    def test_recognizes_anvisa_dcb_outside_curated_catalog(self):
+        response = parse_verification("ATORVASTATINA CALCICA 40 MG", [])
+        self.assertEqual("atorvastatina cálcica", response.nome)
+        self.assertEqual("40mg", response.miligramas)
+
+    def test_fuzzy_matches_anvisa_dcb_without_guessing_short_words(self):
+        response = parse_verification("ATORVASTATLNA 20 MG", [])
+        self.assertEqual("atorvastatina", response.nome)
+
+        unknown = parse_verification("CAIXA AZUL USO ORAL 20 MG", [])
+        self.assertEqual("Medicamento não identificado com segurança", unknown.nome)
 
 
 if __name__ == "__main__":

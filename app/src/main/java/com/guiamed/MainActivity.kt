@@ -71,6 +71,9 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private var hasAnnouncedStartup = false
     private var pendingSharedIntent: Intent? = null
     private var permissionFlowActive = false
+    private val maxPackageReadAttempts = 3
+    private var packageReadAttempt = 0
+    private val accumulatedPackageOcr = mutableListOf<String>()
     private val cameraScope = CoroutineScope(Dispatchers.IO)
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private lateinit var permissionHelper: PermissionAccessibilityHelper
@@ -316,6 +319,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private fun handleSingleTap() {
         if (isProcessing || permissionFlowActive) return
         isProcessing = true
+        resetPackageReadSession()
         
         vibrationManager.vibrateShort()
         updateStatus("Focando embalagem...", isDanger = false)
@@ -386,6 +390,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             handleProcessingError("A câmera ainda não está pronta. Tente novamente em alguns segundos.")
             return
         }
+        packageReadAttempt += 1
         
         val outputFile = createImageFile()
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
@@ -423,18 +428,29 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
                 val textoOcr = ocrEngine.recognizeTextFromBitmap(bitmap)
                 bitmap.recycle()
-                
+
                 if (textoOcr.isBlank()) {
-                    runOnUiThread { handleProcessingError(getString(R.string.no_text_found)) }
+                    runOnUiThread {
+                        retryPackageReadOrFinish(getString(R.string.no_text_found))
+                    }
                     return@launch
                 }
 
+                if (textoOcr !in accumulatedPackageOcr) {
+                    accumulatedPackageOcr.add(textoOcr)
+                }
+                val combinedOcr = accumulatedPackageOcr.joinToString("\n")
+
                 // Envia para API
-                val result = repository.verificarMedicamento(this@MainActivity, textoOcr)
+                val result = repository.verificarMedicamento(this@MainActivity, combinedOcr)
                 
                 runOnUiThread {
                     result.onSuccess { response ->
-                        handleVerificarSuccess(response)
+                        if (response.nome.startsWith("Medicamento não identificado")) {
+                            retryPackageReadOrFinish(response.mensagem ?: getString(R.string.no_text_found), response)
+                        } else {
+                            handleVerificarSuccess(response)
+                        }
                     }.onFailure { e ->
                         handleProcessingError(e.message ?: getString(R.string.network_error))
                     }
@@ -446,6 +462,32 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                 file.delete()
             }
         }
+    }
+
+    private fun retryPackageReadOrFinish(message: String, finalResponse: VerificarResponse? = null) {
+        if (packageReadAttempt >= maxPackageReadAttempts) {
+            if (finalResponse != null) {
+                handleVerificarSuccess(finalResponse)
+            } else {
+                handleProcessingError(message)
+            }
+            return
+        }
+
+        val nextAttempt = packageReadAttempt + 1
+        val retryMessage = "Não ficou nítido. Ajustando foco, tentativa $nextAttempt de $maxPackageReadAttempts."
+        updateStatus("Ajustando foco — tentativa $nextAttempt de $maxPackageReadAttempts", isDanger = false)
+        vibrationManager.vibrateShort()
+        ttsManager.speak(retryMessage)
+        focusCameraThen {
+            updateStatus(getString(R.string.reading_package), isDanger = false)
+            captureAndProcessImage()
+        }
+    }
+
+    private fun resetPackageReadSession() {
+        packageReadAttempt = 0
+        accumulatedPackageOcr.clear()
     }
 
     private fun decodeBitmapRespectingExif(file: File): Bitmap? {
@@ -474,6 +516,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
     private fun handleVerificarSuccess(response: VerificarResponse) {
         isProcessing = false
+        resetPackageReadSession()
         
         val builder = StringBuilder()
         builder.append("Medicamento: ${response.nome}")
@@ -505,6 +548,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
     private fun handleProcessingError(message: String) {
         isProcessing = false
+        resetPackageReadSession()
         updateStatus("Erro: $message", isDanger = true)
         ttsManager.speak(message)
         vibrationManager.vibrateTripleLong()

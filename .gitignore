@@ -21,6 +21,7 @@ build/
 
 # Local configuration
 local.properties
+backend/data/source/
 
 # IDE
 .idea/

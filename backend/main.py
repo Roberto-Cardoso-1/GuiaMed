@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import asyncio
 import calendar
+import json
 import logging
 import re
 import unicodedata
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from difflib import SequenceMatcher
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 import asyncpg
@@ -96,6 +99,21 @@ MEDICINES = (
         "componentes": ("rosuvastatina", "rosuvastatina cálcica"),
     },
 )
+
+DCB_CATALOG_PATH = Path(__file__).parent / "data" / "dcb_medicamentos.json"
+OCR_NON_MEDICINE_WORDS = {
+    "CAIXA",
+    "CAPSULA",
+    "CAPSULAS",
+    "COMPRIMIDO",
+    "COMPRIMIDOS",
+    "GENERICO",
+    "MEDICAMENTO",
+    "ORAL",
+    "REVESTIDO",
+    "REVESTIDOS",
+    "USO",
+}
 
 
 class VerificarRequest(BaseModel):
@@ -186,6 +204,86 @@ def normalize_ocr(value: str) -> str:
     return re.sub(r"\s+", " ", " ".join(tokens)).strip()
 
 
+@lru_cache(maxsize=1)
+def load_dcb_catalog() -> tuple[dict[str, dict], tuple[tuple[str, dict], ...]]:
+    """Carrega a base oficial DCB e cria índices compactos para o OCR."""
+    try:
+        raw_catalog = json.loads(DCB_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Catálogo DCB indisponível: %s", exc)
+        return {}, ()
+
+    exact_index: dict[str, dict] = {}
+    single_word_index: list[tuple[str, dict]] = []
+    for item in raw_catalog:
+        name = str(item.get("nome", "")).strip()
+        normalized_name = normalize_ocr(name)
+        if len(normalized_name) < 4:
+            continue
+        medicine = {
+            "nome": name,
+            "aliases": (name,),
+            "componentes": (name,),
+        }
+        exact_index[normalized_name] = medicine
+        if " " not in normalized_name and len(normalized_name) >= 7:
+            single_word_index.append((normalized_name, medicine))
+
+    logger.info("Catálogo DCB carregado com %s denominações", len(exact_index))
+    return exact_index, tuple(single_word_index)
+
+
+def find_dcb_medicine(normalized_text: str) -> Optional[dict]:
+    exact_index, single_word_index = load_dcb_catalog()
+    if not exact_index:
+        return None
+
+    words = [
+        word
+        for word in re.findall(r"[A-Z0-9]{2,}", normalized_text)
+        if any(char.isalpha() for char in word)
+    ]
+
+    # Prefere a denominação exata mais longa. Assim, por exemplo,
+    # "rosuvastatina cálcica" ganha de "rosuvastatina".
+    exact_matches: list[tuple[int, dict]] = []
+    for size in range(1, min(6, len(words)) + 1):
+        for index in range(len(words) - size + 1):
+            candidate = " ".join(words[index : index + size])
+            medicine = exact_index.get(candidate)
+            if medicine is not None:
+                exact_matches.append((len(candidate), medicine))
+    if exact_matches:
+        return max(exact_matches, key=lambda match: match[0])[1]
+
+    # A busca aproximada é deliberadamente restrita a palavras longas e exige
+    # vantagem clara sobre o segundo resultado, evitando adivinhar remédios.
+    candidates = {
+        word
+        for word in words
+        if len(word) >= 7 and word not in OCR_NON_MEDICINE_WORDS
+    }
+    best_medicine: Optional[dict] = None
+    best_score = 0.0
+    second_score = 0.0
+    for candidate in candidates:
+        tolerance = max(2, round(len(candidate) * 0.18))
+        for official_name, medicine in single_word_index:
+            if abs(len(official_name) - len(candidate)) > tolerance:
+                continue
+            score = SequenceMatcher(None, official_name, candidate).ratio()
+            if score > best_score:
+                second_score = best_score
+                best_score = score
+                best_medicine = medicine
+            elif medicine != best_medicine and score > second_score:
+                second_score = score
+
+    if best_score >= 0.86 and best_score - second_score >= 0.04:
+        return best_medicine
+    return None
+
+
 def _similarity(left: str, right: str) -> float:
     left_normalized = normalize_ocr(left)
     right_normalized = normalize_ocr(right)
@@ -209,6 +307,11 @@ def find_medicine(normalized_text: str) -> Optional[dict]:
                 if score > best_score:
                     best_score = score
                     best_medicine = medicine
+    if best_score >= 0.86:
+        return best_medicine
+    dcb_medicine = find_dcb_medicine(normalized_text)
+    if dcb_medicine is not None:
+        return dcb_medicine
     return best_medicine if best_score >= 0.72 else None
 
 
