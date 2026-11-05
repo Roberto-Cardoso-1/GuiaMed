@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import asyncio
 import calendar
+import json
 import logging
 import re
 import unicodedata
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from difflib import SequenceMatcher
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 import asyncpg
@@ -84,7 +87,33 @@ MEDICINES = (
         "aliases": ("OMEPRAZOL", "LOSEC"),
         "componentes": ("omeprazol",),
     },
+    {
+        "nome": "Rosuvastatina Cálcica",
+        "aliases": (
+            "ROSUVASTATINA",
+            "ROSUVASTATINA CALCICA",
+            "CRESTOR",
+            "ROSUCORE",
+            "ROSUCOR",
+        ),
+        "componentes": ("rosuvastatina", "rosuvastatina cálcica"),
+    },
 )
+
+DCB_CATALOG_PATH = Path(__file__).parent / "data" / "dcb_medicamentos.json"
+OCR_NON_MEDICINE_WORDS = {
+    "CAIXA",
+    "CAPSULA",
+    "CAPSULAS",
+    "COMPRIMIDO",
+    "COMPRIMIDOS",
+    "GENERICO",
+    "MEDICAMENTO",
+    "ORAL",
+    "REVESTIDO",
+    "REVESTIDOS",
+    "USO",
+}
 
 
 class VerificarRequest(BaseModel):
@@ -175,6 +204,86 @@ def normalize_ocr(value: str) -> str:
     return re.sub(r"\s+", " ", " ".join(tokens)).strip()
 
 
+@lru_cache(maxsize=1)
+def load_dcb_catalog() -> tuple[dict[str, dict], tuple[tuple[str, dict], ...]]:
+    """Carrega a base oficial DCB e cria índices compactos para o OCR."""
+    try:
+        raw_catalog = json.loads(DCB_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning("Catálogo DCB indisponível: %s", exc)
+        return {}, ()
+
+    exact_index: dict[str, dict] = {}
+    single_word_index: list[tuple[str, dict]] = []
+    for item in raw_catalog:
+        name = str(item.get("nome", "")).strip()
+        normalized_name = normalize_ocr(name)
+        if len(normalized_name) < 4:
+            continue
+        medicine = {
+            "nome": name,
+            "aliases": (name,),
+            "componentes": (name,),
+        }
+        exact_index[normalized_name] = medicine
+        if " " not in normalized_name and len(normalized_name) >= 7:
+            single_word_index.append((normalized_name, medicine))
+
+    logger.info("Catálogo DCB carregado com %s denominações", len(exact_index))
+    return exact_index, tuple(single_word_index)
+
+
+def find_dcb_medicine(normalized_text: str) -> Optional[dict]:
+    exact_index, single_word_index = load_dcb_catalog()
+    if not exact_index:
+        return None
+
+    words = [
+        word
+        for word in re.findall(r"[A-Z0-9]{2,}", normalized_text)
+        if any(char.isalpha() for char in word)
+    ]
+
+    # Prefere a denominação exata mais longa. Assim, por exemplo,
+    # "rosuvastatina cálcica" ganha de "rosuvastatina".
+    exact_matches: list[tuple[int, dict]] = []
+    for size in range(1, min(6, len(words)) + 1):
+        for index in range(len(words) - size + 1):
+            candidate = " ".join(words[index : index + size])
+            medicine = exact_index.get(candidate)
+            if medicine is not None:
+                exact_matches.append((len(candidate), medicine))
+    if exact_matches:
+        return max(exact_matches, key=lambda match: match[0])[1]
+
+    # A busca aproximada é deliberadamente restrita a palavras longas e exige
+    # vantagem clara sobre o segundo resultado, evitando adivinhar remédios.
+    candidates = {
+        word
+        for word in words
+        if len(word) >= 7 and word not in OCR_NON_MEDICINE_WORDS
+    }
+    best_medicine: Optional[dict] = None
+    best_score = 0.0
+    second_score = 0.0
+    for candidate in candidates:
+        tolerance = max(2, round(len(candidate) * 0.18))
+        for official_name, medicine in single_word_index:
+            if abs(len(official_name) - len(candidate)) > tolerance:
+                continue
+            score = SequenceMatcher(None, official_name, candidate).ratio()
+            if score > best_score:
+                second_score = best_score
+                best_score = score
+                best_medicine = medicine
+            elif medicine != best_medicine and score > second_score:
+                second_score = score
+
+    if best_score >= 0.86 and best_score - second_score >= 0.04:
+        return best_medicine
+    return None
+
+
 def _similarity(left: str, right: str) -> float:
     left_normalized = normalize_ocr(left)
     right_normalized = normalize_ocr(right)
@@ -198,6 +307,11 @@ def find_medicine(normalized_text: str) -> Optional[dict]:
                 if score > best_score:
                     best_score = score
                     best_medicine = medicine
+    if best_score >= 0.86:
+        return best_medicine
+    dcb_medicine = find_dcb_medicine(normalized_text)
+    if dcb_medicine is not None:
+        return dcb_medicine
     return best_medicine if best_score >= 0.72 else None
 
 
@@ -214,7 +328,8 @@ def extract_expiration(normalized_text: str, today: Optional[date] = None) -> tu
     # Uma data so e validade se estiver explicitamente rotulada. Isso impede
     # confundir lote, fabricacao ou outros numeros da embalagem com vencimento.
     match = re.search(
-        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC)\s*[:\-]?\s*(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b",
+        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP)\s*[:.\-]?\s*"
+        r"(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b",
         normalized_text,
     )
     if not match:
@@ -278,26 +393,84 @@ def parse_verification(
     )
 
 
+def extract_recipe_frequency(normalized_text: str) -> str:
+    patterns = (
+        r"\b\d{1,2}\s*/\s*\d{1,2}\s*H\b",
+        r"\bA CADA \d{1,2} HORAS?\b",
+        r"\bDE \d{1,2} EM \d{1,2} HORAS?\b",
+        r"\b(?:\d{1,2}|UMA|DUAS|TRES)\s*(?:X|VEZ|VEZES)\s*(?:AO|POR)\s*DIA\b",
+        r"\b(?:PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, normalized_text)
+        if match:
+            return match.group(0).lower()
+    return "frequência não identificada"
+
+
+def extract_recipe_duration(normalized_text: str) -> Optional[str]:
+    match = re.search(
+        r"\b(?:POR|DURANTE|POR ATE)\s+(\d{1,3}\s+(?:DIAS?|SEMANAS?|MESES?))\b",
+        normalized_text,
+    )
+    return match.group(1).lower() if match else None
+
+
+def extract_recipe_instructions(normalized_text: str) -> Optional[str]:
+    instructions: list[str] = []
+    administration = re.search(
+        r"\b(?:TOMAR|USAR|APLICAR|INGERIR)\s+"
+        r"(?:\d{1,2}|UM|UMA|MEIO|MEIA)\s+"
+        r"(?:COMPRIMIDOS?|CP|CAPSULAS?|CAP|GOTAS?|ML|DOSES?|PUFFS?)\b",
+        normalized_text,
+    )
+    if administration:
+        instructions.append(administration.group(0).lower())
+
+    context = re.search(
+        r"\b(?:APOS AS? REFEICOES?|ANTES DAS? REFEICOES?|EM JEJUM|"
+        r"PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b",
+        normalized_text,
+    )
+    if context:
+        value = context.group(0).lower()
+        if value not in instructions:
+            instructions.append(value)
+    return ", ".join(instructions) or None
+
+
 def parse_recipe(texto_ocr: str) -> ReceitaResponse:
+    normalized_lines = [
+        normalized
+        for raw_line in (texto_ocr.splitlines() or [texto_ocr])
+        if (normalized := normalize_ocr(raw_line))
+    ]
+    detected_medicines = [find_medicine(line) for line in normalized_lines]
     medicines: list[MedicamentoReceita] = []
     seen: set[str] = set()
-    for raw_line in texto_ocr.splitlines() or [texto_ocr]:
-        normalized = normalize_ocr(raw_line)
-        medicine = find_medicine(normalized)
+    for line_index, medicine in enumerate(detected_medicines):
         if not medicine or medicine["nome"] in seen:
             continue
         seen.add(medicine["nome"])
-        dosage = extract_dosage(normalized) or "dosagem não identificada"
-        frequency_match = re.search(r"\b(\d{1,2}\s*/\s*\d{1,2}\s*H|A CADA \d{1,2} HORAS?)\b", normalized)
-        duration_match = re.search(r"\bPOR\s+(\d{1,3}\s+DIAS?)\b", normalized)
-        instruction_match = re.search(r"\b(APOS AS? REFEICOES?|EM JEJUM|ANTES DE DORMIR)\b", normalized)
+
+        # Prescrições costumam colocar nome, dosagem e modo de uso em linhas
+        # diferentes. Junta até três linhas seguintes, parando antes do
+        # próximo medicamento para não atribuir uma dose ao item errado.
+        block_lines = [normalized_lines[line_index]]
+        for next_index in range(line_index + 1, min(line_index + 4, len(normalized_lines))):
+            next_medicine = detected_medicines[next_index]
+            if next_medicine and next_medicine["nome"] != medicine["nome"]:
+                break
+            block_lines.append(normalized_lines[next_index])
+        context = " ".join(block_lines)
+
         medicines.append(
             MedicamentoReceita(
                 nome=medicine["nome"],
-                dosagem=dosage,
-                frequencia=frequency_match.group(1).lower() if frequency_match else "frequência não identificada",
-                duracao=duration_match.group(1).lower() if duration_match else None,
-                instrucoes=instruction_match.group(1).lower() if instruction_match else None,
+                dosagem=extract_dosage(context) or "dosagem não identificada",
+                frequencia=extract_recipe_frequency(context),
+                duracao=extract_recipe_duration(context),
+                instrucoes=extract_recipe_instructions(context),
             )
         )
 
@@ -317,11 +490,20 @@ def parse_recipe(texto_ocr: str) -> ReceitaResponse:
             horarios=horarios,
             mensagem="Não consegui identificar medicamentos na receita. Tente outra foto com melhor foco.",
         )
+    incomplete = any(
+        medicine.dosagem == "dosagem não identificada"
+        or medicine.frequencia == "frequência não identificada"
+        for medicine in medicines
+    )
     return ReceitaResponse(
         medicamentos=medicines,
         posologia_completa=". ".join(summary_parts),
         horarios=horarios,
-        mensagem="Receita processada com sucesso.",
+        mensagem=(
+            "Receita lida, mas alguns dados não foram identificados. Confirme na receita original."
+            if incomplete
+            else "Receita processada com sucesso."
+        ),
     )
 
 

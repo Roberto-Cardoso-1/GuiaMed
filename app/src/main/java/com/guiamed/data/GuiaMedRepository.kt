@@ -78,7 +78,7 @@ class GuiaMedRepository(
         val dosage = Regex("\\b(\\d{1,4}(?:[.,]\\d+)?)\\s*(mcg|mg|g|ml)\\b")
             .find(normalized)
             ?.let { "${it.groupValues[1].replace(',', '.')}${it.groupValues[2]}" }
-        val validityMatch = Regex("\\b(?:validade|valid|val|vencimento|venc)\\s*[:\\-]?\\s*(0?[1-9]|1[0-2])[/\\-. ](\\d{2}|\\d{4})\\b")
+        val validityMatch = Regex("\\b(?:validade|valid|val|vencimento|venc|vto|expira|exp)\\s*[:.\\-]?\\s*(0?[1-9]|1[0-2])[/\\-. ](\\d{2}|\\d{4})\\b")
             .find(normalized)
         val validity = validityMatch?.let {
             val year = it.groupValues[2].toInt().let { value -> if (value < 100) value + 2000 else value }

@@ -2,6 +2,10 @@ package com.guiamed.ocr
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.util.Log
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -58,7 +62,7 @@ class TesseractOcrEngine(private val context: Context) {
     suspend fun recognizeText(image: android.media.Image): String {
         return try {
             val bitmap = imageToBitmap(image) ?: return ""
-            recognizeText(bitmap)
+            recognizeTextFromBitmap(bitmap).also { bitmap.recycle() }
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao converter imagem para OCR", e)
             ""
@@ -66,7 +70,107 @@ class TesseractOcrEngine(private val context: Context) {
     }
 
     suspend fun recognizeTextFromBitmap(bitmap: Bitmap): String {
-        return recognizeText(bitmap)
+        val attempts = mutableListOf<String>()
+        attempts += recognizeText(bitmap)
+
+        val horizontalMargin = (bitmap.width * 0.09f).toInt()
+        val verticalMargin = (bitmap.height * 0.09f).toInt()
+        val cropped = if (
+            bitmap.width - horizontalMargin * 2 >= 320 &&
+            bitmap.height - verticalMargin * 2 >= 320
+        ) {
+            Bitmap.createBitmap(
+                bitmap,
+                horizontalMargin,
+                verticalMargin,
+                bitmap.width - horizontalMargin * 2,
+                bitmap.height - verticalMargin * 2,
+            )
+        } else {
+            null
+        }
+
+        if (cropped != null) {
+            try {
+                attempts += recognizeText(cropped)
+                val enhanced = enhanceForOcr(cropped)
+                try {
+                    attempts += recognizeText(enhanced)
+                } finally {
+                    enhanced.recycle()
+                }
+            } finally {
+                cropped.recycle()
+            }
+        }
+
+        return mergeRecognizedLines(attempts)
+    }
+
+    /**
+     * Receitas têm texto menor e mais espalhado que embalagens. Mantém a folha
+     * inteira, limita imagens excessivamente grandes e combina a leitura
+     * original com uma versão em alto contraste.
+     */
+    suspend fun recognizeDocumentTextFromBitmap(bitmap: Bitmap): String {
+        val prepared = scaleDownForOcr(bitmap, maxDimension = 2400)
+        return try {
+            val attempts = mutableListOf<String>()
+            attempts += recognizeText(prepared)
+            val enhanced = enhanceForOcr(prepared)
+            try {
+                attempts += recognizeText(enhanced)
+            } finally {
+                enhanced.recycle()
+            }
+            mergeRecognizedLines(attempts)
+        } finally {
+            if (prepared !== bitmap) prepared.recycle()
+        }
+    }
+
+    private fun mergeRecognizedLines(attempts: List<String>): String {
+        val uniqueLines = linkedMapOf<String, String>()
+        attempts.asSequence()
+            .flatMap { it.lineSequence() }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .forEach { line -> uniqueLines.putIfAbsent(line.uppercase(), line) }
+        return uniqueLines.values.joinToString("\n")
+    }
+
+    private fun scaleDownForOcr(source: Bitmap, maxDimension: Int): Bitmap {
+        val largestDimension = maxOf(source.width, source.height)
+        if (largestDimension <= maxDimension) return source
+        val scale = maxDimension.toFloat() / largestDimension.toFloat()
+        return Bitmap.createScaledBitmap(
+            source,
+            (source.width * scale).toInt().coerceAtLeast(1),
+            (source.height * scale).toInt().coerceAtLeast(1),
+            true,
+        )
+    }
+
+    private fun enhanceForOcr(source: Bitmap): Bitmap {
+        val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        val grayscale = ColorMatrix().apply { setSaturation(0f) }
+        val contrast = 1.45f
+        val translation = (-0.5f * contrast + 0.5f) * 255f
+        grayscale.postConcat(
+            ColorMatrix(
+                floatArrayOf(
+                    contrast, 0f, 0f, 0f, translation,
+                    0f, contrast, 0f, 0f, translation,
+                    0f, 0f, contrast, 0f, translation,
+                    0f, 0f, 0f, 1f, 0f,
+                ),
+            ),
+        )
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            colorFilter = ColorMatrixColorFilter(grayscale)
+        }
+        Canvas(output).drawBitmap(source, 0f, 0f, paint)
+        return output
     }
 
     private fun imageToBitmap(image: android.media.Image): Bitmap? {

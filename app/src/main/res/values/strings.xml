@@ -9,7 +9,7 @@
     <string name="network_error">Sem conexão com o servidor, tentando novamente...</string>
     <string name="ocr_error">Não foi possível ler o texto. Tente novamente com melhor iluminação.</string>
     <string name="no_text_found">Nenhum texto encontrado na imagem.</string>
-    <string name="prescription_mode">Modo receita. Aponte a câmera para a receita. Vou capturar quando terminar esta instrução.</string>
+    <string name="prescription_mode">Modo receita. Coloque a folha inteira no quadro, mantenha a câmera paralela à receita e fique parado. Vou capturar quando terminar esta instrução.</string>
     <string name="danger_alert">ATENÇÃO: Perigo detectado!</string>
     <string name="expired_medicine">Este medicamento está vencido.</string>
     <string name="allergy_alert">ALERTA DE ALERGIA: Você tem alergia a este medicamento.</string>
@@ -18,4 +18,5 @@
     <string name="permission_request_camera">Vou pedir permissão para usar a câmera. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
     <string name="permission_request_audio">Vou pedir permissão para usar o microfone. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
     <string name="repeat_instructions">Um toque: ler embalagem. Dois toques: ler receita. Três toques: cadastrar alergia por voz. Quatro toques: repetir instruções.</string>
+    <string name="touch_instructions">1 toque: Ler | 2 toques: Receita\n3 toques: Alergia | 4 toques: Instruções</string>
 </resources>
