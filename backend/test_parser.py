@@ -50,6 +50,30 @@ class MedicationParserTests(unittest.TestCase):
         self.assertEqual(1, len(response.medicamentos))
         self.assertEqual("600mg", response.medicamentos[0].dosagem)
 
+    def test_recipe_joins_name_dosage_and_instructions_on_adjacent_lines(self):
+        response = parse_recipe(
+            "ATORVASTATINA CALCICA\n"
+            "20 MG\n"
+            "TOMAR 1 COMPRIMIDO A NOITE DURANTE 30 DIAS"
+        )
+        self.assertEqual(1, len(response.medicamentos))
+        medicine = response.medicamentos[0]
+        self.assertEqual("atorvastatina cálcica", medicine.nome)
+        self.assertEqual("20mg", medicine.dosagem)
+        self.assertEqual("a noite", medicine.frequencia)
+        self.assertEqual("30 dias", medicine.duracao)
+        self.assertIn("tomar 1 comprimido", medicine.instrucoes or "")
+
+    def test_recipe_stops_context_before_next_medicine(self):
+        response = parse_recipe(
+            "PARACETAMOL\n500 MG\nA CADA 8 HORAS\n"
+            "OMEPRAZOL\n20 MG\nUMA VEZ AO DIA EM JEJUM"
+        )
+        self.assertEqual(2, len(response.medicamentos))
+        self.assertEqual("500mg", response.medicamentos[0].dosagem)
+        self.assertEqual("20mg", response.medicamentos[1].dosagem)
+        self.assertEqual("uma vez ao dia", response.medicamentos[1].frequencia)
+
     def test_normalization_fixes_numeric_context(self):
         self.assertIn("600 MG", normalize_ocr("Ibuprofeno 6OO mg"))
 

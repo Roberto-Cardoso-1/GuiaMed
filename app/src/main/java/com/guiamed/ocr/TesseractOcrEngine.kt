@@ -93,19 +93,43 @@ class TesseractOcrEngine(private val context: Context) {
         if (cropped != null) {
             try {
                 attempts += recognizeText(cropped)
-                if (attempts.all { it.isBlank() }) {
-                    val enhanced = enhanceForOcr(cropped)
-                    try {
-                        attempts += recognizeText(enhanced)
-                    } finally {
-                        enhanced.recycle()
-                    }
+                val enhanced = enhanceForOcr(cropped)
+                try {
+                    attempts += recognizeText(enhanced)
+                } finally {
+                    enhanced.recycle()
                 }
             } finally {
                 cropped.recycle()
             }
         }
 
+        return mergeRecognizedLines(attempts)
+    }
+
+    /**
+     * Receitas têm texto menor e mais espalhado que embalagens. Mantém a folha
+     * inteira, limita imagens excessivamente grandes e combina a leitura
+     * original com uma versão em alto contraste.
+     */
+    suspend fun recognizeDocumentTextFromBitmap(bitmap: Bitmap): String {
+        val prepared = scaleDownForOcr(bitmap, maxDimension = 2400)
+        return try {
+            val attempts = mutableListOf<String>()
+            attempts += recognizeText(prepared)
+            val enhanced = enhanceForOcr(prepared)
+            try {
+                attempts += recognizeText(enhanced)
+            } finally {
+                enhanced.recycle()
+            }
+            mergeRecognizedLines(attempts)
+        } finally {
+            if (prepared !== bitmap) prepared.recycle()
+        }
+    }
+
+    private fun mergeRecognizedLines(attempts: List<String>): String {
         val uniqueLines = linkedMapOf<String, String>()
         attempts.asSequence()
             .flatMap { it.lineSequence() }
@@ -113,6 +137,18 @@ class TesseractOcrEngine(private val context: Context) {
             .filter { it.isNotBlank() }
             .forEach { line -> uniqueLines.putIfAbsent(line.uppercase(), line) }
         return uniqueLines.values.joinToString("\n")
+    }
+
+    private fun scaleDownForOcr(source: Bitmap, maxDimension: Int): Bitmap {
+        val largestDimension = maxOf(source.width, source.height)
+        if (largestDimension <= maxDimension) return source
+        val scale = maxDimension.toFloat() / largestDimension.toFloat()
+        return Bitmap.createScaledBitmap(
+            source,
+            (source.width * scale).toInt().coerceAtLeast(1),
+            (source.height * scale).toInt().coerceAtLeast(1),
+            true,
+        )
     }
 
     private fun enhanceForOcr(source: Bitmap): Bitmap {

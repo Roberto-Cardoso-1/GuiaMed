@@ -9,7 +9,7 @@
     <string name="network_error">Sem conexão com o servidor, tentando novamente...</string>
     <string name="ocr_error">Não foi possível ler o texto. Tente novamente com melhor iluminação.</string>
     <string name="no_text_found">Nenhum texto encontrado na imagem.</string>
-    <string name="prescription_mode">Modo receita. Aponte a câmera para a receita. Vou capturar quando terminar esta instrução.</string>
+    <string name="prescription_mode">Modo receita. Coloque a folha inteira no quadro, mantenha a câmera paralela à receita e fique parado. Vou capturar quando terminar esta instrução.</string>
     <string name="danger_alert">ATENÇÃO: Perigo detectado!</string>
     <string name="expired_medicine">Este medicamento está vencido.</string>
     <string name="allergy_alert">ALERTA DE ALERGIA: Você tem alergia a este medicamento.</string>

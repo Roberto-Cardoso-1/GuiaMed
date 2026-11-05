@@ -393,26 +393,84 @@ def parse_verification(
     )
 
 
+def extract_recipe_frequency(normalized_text: str) -> str:
+    patterns = (
+        r"\b\d{1,2}\s*/\s*\d{1,2}\s*H\b",
+        r"\bA CADA \d{1,2} HORAS?\b",
+        r"\bDE \d{1,2} EM \d{1,2} HORAS?\b",
+        r"\b(?:\d{1,2}|UMA|DUAS|TRES)\s*(?:X|VEZ|VEZES)\s*(?:AO|POR)\s*DIA\b",
+        r"\b(?:PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, normalized_text)
+        if match:
+            return match.group(0).lower()
+    return "frequência não identificada"
+
+
+def extract_recipe_duration(normalized_text: str) -> Optional[str]:
+    match = re.search(
+        r"\b(?:POR|DURANTE|POR ATE)\s+(\d{1,3}\s+(?:DIAS?|SEMANAS?|MESES?))\b",
+        normalized_text,
+    )
+    return match.group(1).lower() if match else None
+
+
+def extract_recipe_instructions(normalized_text: str) -> Optional[str]:
+    instructions: list[str] = []
+    administration = re.search(
+        r"\b(?:TOMAR|USAR|APLICAR|INGERIR)\s+"
+        r"(?:\d{1,2}|UM|UMA|MEIO|MEIA)\s+"
+        r"(?:COMPRIMIDOS?|CP|CAPSULAS?|CAP|GOTAS?|ML|DOSES?|PUFFS?)\b",
+        normalized_text,
+    )
+    if administration:
+        instructions.append(administration.group(0).lower())
+
+    context = re.search(
+        r"\b(?:APOS AS? REFEICOES?|ANTES DAS? REFEICOES?|EM JEJUM|"
+        r"PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b",
+        normalized_text,
+    )
+    if context:
+        value = context.group(0).lower()
+        if value not in instructions:
+            instructions.append(value)
+    return ", ".join(instructions) or None
+
+
 def parse_recipe(texto_ocr: str) -> ReceitaResponse:
+    normalized_lines = [
+        normalized
+        for raw_line in (texto_ocr.splitlines() or [texto_ocr])
+        if (normalized := normalize_ocr(raw_line))
+    ]
+    detected_medicines = [find_medicine(line) for line in normalized_lines]
     medicines: list[MedicamentoReceita] = []
     seen: set[str] = set()
-    for raw_line in texto_ocr.splitlines() or [texto_ocr]:
-        normalized = normalize_ocr(raw_line)
-        medicine = find_medicine(normalized)
+    for line_index, medicine in enumerate(detected_medicines):
         if not medicine or medicine["nome"] in seen:
             continue
         seen.add(medicine["nome"])
-        dosage = extract_dosage(normalized) or "dosagem não identificada"
-        frequency_match = re.search(r"\b(\d{1,2}\s*/\s*\d{1,2}\s*H|A CADA \d{1,2} HORAS?)\b", normalized)
-        duration_match = re.search(r"\bPOR\s+(\d{1,3}\s+DIAS?)\b", normalized)
-        instruction_match = re.search(r"\b(APOS AS? REFEICOES?|EM JEJUM|ANTES DE DORMIR)\b", normalized)
+
+        # Prescrições costumam colocar nome, dosagem e modo de uso em linhas
+        # diferentes. Junta até três linhas seguintes, parando antes do
+        # próximo medicamento para não atribuir uma dose ao item errado.
+        block_lines = [normalized_lines[line_index]]
+        for next_index in range(line_index + 1, min(line_index + 4, len(normalized_lines))):
+            next_medicine = detected_medicines[next_index]
+            if next_medicine and next_medicine["nome"] != medicine["nome"]:
+                break
+            block_lines.append(normalized_lines[next_index])
+        context = " ".join(block_lines)
+
         medicines.append(
             MedicamentoReceita(
                 nome=medicine["nome"],
-                dosagem=dosage,
-                frequencia=frequency_match.group(1).lower() if frequency_match else "frequência não identificada",
-                duracao=duration_match.group(1).lower() if duration_match else None,
-                instrucoes=instruction_match.group(1).lower() if instruction_match else None,
+                dosagem=extract_dosage(context) or "dosagem não identificada",
+                frequencia=extract_recipe_frequency(context),
+                duracao=extract_recipe_duration(context),
+                instrucoes=extract_recipe_instructions(context),
             )
         )
 
@@ -432,11 +490,20 @@ def parse_recipe(texto_ocr: str) -> ReceitaResponse:
             horarios=horarios,
             mensagem="Não consegui identificar medicamentos na receita. Tente outra foto com melhor foco.",
         )
+    incomplete = any(
+        medicine.dosagem == "dosagem não identificada"
+        or medicine.frequencia == "frequência não identificada"
+        for medicine in medicines
+    )
     return ReceitaResponse(
         medicamentos=medicines,
         posologia_completa=". ".join(summary_parts),
         horarios=horarios,
-        mensagem="Receita processada com sucesso.",
+        mensagem=(
+            "Receita lida, mas alguns dados não foram identificados. Confirme na receita original."
+            if incomplete
+            else "Receita processada com sucesso."
+        ),
     )
 
 
