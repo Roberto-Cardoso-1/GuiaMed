@@ -84,6 +84,17 @@ MEDICINES = (
         "aliases": ("OMEPRAZOL", "LOSEC"),
         "componentes": ("omeprazol",),
     },
+    {
+        "nome": "Rosuvastatina Cálcica",
+        "aliases": (
+            "ROSUVASTATINA",
+            "ROSUVASTATINA CALCICA",
+            "CRESTOR",
+            "ROSUCORE",
+            "ROSUCOR",
+        ),
+        "componentes": ("rosuvastatina", "rosuvastatina cálcica"),
+    },
 )
 
 

@@ -44,6 +44,14 @@ class MedicationParserTests(unittest.TestCase):
     def test_normalization_fixes_numeric_context(self):
         self.assertIn("600 MG", normalize_ocr("Ibuprofeno 6OO mg"))
 
+    def test_recognizes_rosuvastatin_from_front_package(self):
+        response = parse_verification(
+            "althaia rosuvastatlna calcica comprimido revestido 2O MG medicamento generico",
+            [],
+        )
+        self.assertEqual("Rosuvastatina Cálcica", response.nome)
+        self.assertEqual("20mg", response.miligramas)
+
 
 if __name__ == "__main__":
     unittest.main()

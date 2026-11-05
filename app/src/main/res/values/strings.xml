@@ -18,4 +18,5 @@
     <string name="permission_request_camera">Vou pedir permissão para usar a câmera. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
     <string name="permission_request_audio">Vou pedir permissão para usar o microfone. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
     <string name="repeat_instructions">Um toque: ler embalagem. Dois toques: ler receita. Três toques: cadastrar alergia por voz. Quatro toques: repetir instruções.</string>
+    <string name="touch_instructions">1 toque: Ler | 2 toques: Receita\n3 toques: Alergia | 4 toques: Instruções</string>
 </resources>

@@ -5,16 +5,18 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
-import android.util.Size
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -23,6 +25,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.cancel
 import com.google.common.util.concurrent.ListenableFuture
@@ -44,6 +47,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.PermissionRequester {
 
@@ -231,7 +235,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
         imageCapture = ImageCapture.Builder()
             .setTargetRotation(previewView.display.rotation)
-            .setTargetResolution(Size(1920, 1080))
+            .setTargetAspectRatio(AspectRatio.RATIO_4_3)
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
             .setFlashMode(ImageCapture.FLASH_MODE_OFF)
             .build()
@@ -314,9 +318,12 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         isProcessing = true
         
         vibrationManager.vibrateShort()
-        updateStatus(getString(R.string.reading_package), isDanger = false)
+        updateStatus("Focando embalagem...", isDanger = false)
         ttsManager.speakReadingPackage()
-        captureAndProcessImage()
+        focusCameraThen {
+            updateStatus(getString(R.string.reading_package), isDanger = false)
+            captureAndProcessImage()
+        }
     }
 
     private fun handleDoubleTap() {
@@ -327,11 +334,42 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         updateStatus("Modo receita", isDanger = false)
         ttsManager.speak(getString(R.string.prescription_mode), TtsManager.UTTERANCE_ID_DEFAULT) { success ->
             if (success) {
-                capturePrescriptionPhoto()
+                focusCameraThen { capturePrescriptionPhoto() }
             } else {
                 handleProcessingError("Não foi possível iniciar o modo receita. Tente novamente.")
             }
         }
+    }
+
+    private fun focusCameraThen(onReady: () -> Unit) {
+        val activeCamera = camera
+        if (activeCamera == null || previewView.width == 0 || previewView.height == 0) {
+            mainScope.launch {
+                kotlinx.coroutines.delay(350)
+                onReady()
+            }
+            return
+        }
+
+        val centerPoint = previewView.meteringPointFactory.createPoint(
+            previewView.width / 2f,
+            previewView.height / 2f,
+        )
+        val action = FocusMeteringAction.Builder(
+            centerPoint,
+            FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE,
+        )
+            .setAutoCancelDuration(3, TimeUnit.SECONDS)
+            .build()
+
+        val focusFuture = activeCamera.cameraControl.startFocusAndMetering(action)
+        focusFuture.addListener({
+            mainScope.launch {
+                // Evita que o toque para capturar produza uma foto ainda em movimento.
+                kotlinx.coroutines.delay(300)
+                onReady()
+            }
+        }, ContextCompat.getMainExecutor(this))
     }
 
     private fun handleTripleTap() {
@@ -377,7 +415,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private fun processSavedImage(file: File) {
         cameraScope.launch {
             try {
-                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val bitmap = decodeBitmapRespectingExif(file)
                 if (bitmap == null) {
                     runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
                     return@launch
@@ -404,8 +442,34 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             } catch (e: Exception) {
                 Log.e("GuiaMed", "Erro no processamento", e)
                 runOnUiThread { handleProcessingError(getString(R.string.network_error)) }
+            } finally {
+                file.delete()
             }
         }
+    }
+
+    private fun decodeBitmapRespectingExif(file: File): Bitmap? {
+        val source = BitmapFactory.decodeFile(file.absolutePath) ?: return null
+        val orientation = runCatching {
+            ExifInterface(file).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL,
+            )
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+
+        val rotation = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+        if (rotation == 0f) return source
+
+        val matrix = Matrix().apply { postRotate(rotation) }
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+            .also { rotated ->
+                if (rotated !== source) source.recycle()
+            }
     }
 
     private fun handleVerificarSuccess(response: VerificarResponse) {
@@ -524,7 +588,8 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private fun processPrescriptionImage(file: File) {
         cameraScope.launch {
             try {
-                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                val bitmap = decodeBitmapRespectingExif(file)
+                    ?: throw IllegalStateException("Imagem inválida")
                 val textoOcr = ocrEngine.recognizeTextFromBitmap(bitmap)
                 bitmap.recycle()
                 
@@ -536,6 +601,8 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                 sendPrescriptionToApi(textoOcr)
             } catch (e: Exception) {
                 runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
+            } finally {
+                file.delete()
             }
         }
     }
