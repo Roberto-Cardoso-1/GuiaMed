@@ -328,7 +328,8 @@ def extract_expiration(normalized_text: str, today: Optional[date] = None) -> tu
     # Uma data so e validade se estiver explicitamente rotulada. Isso impede
     # confundir lote, fabricacao ou outros numeros da embalagem com vencimento.
     match = re.search(
-        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC)\s*[:\-]?\s*(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b",
+        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP)\s*[:.\-]?\s*"
+        r"(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b",
         normalized_text,
     )
     if not match:

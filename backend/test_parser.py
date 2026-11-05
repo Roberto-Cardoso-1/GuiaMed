@@ -31,6 +31,15 @@ class MedicationParserTests(unittest.TestCase):
         self.assertEqual("10/2026", response.validade)
         self.assertTrue(response.vencido)
 
+    def test_reads_common_expiration_label_from_package_bottom(self):
+        response = parse_verification(
+            "ATORVASTATINA 20 MG VTO: 12/27",
+            [],
+            today=date(2026, 11, 4),
+        )
+        self.assertEqual("12/2027", response.validade)
+        self.assertFalse(response.vencido)
+
     def test_partial_allergy_match_sets_danger(self):
         response = parse_verification("NOVALGINA 500 MG", ["dipirona"])
         self.assertTrue(response.alerta_alergia)

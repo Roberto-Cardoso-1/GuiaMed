@@ -72,7 +72,11 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private var pendingSharedIntent: Intent? = null
     private var permissionFlowActive = false
     private val maxPackageReadAttempts = 3
+    private val maxValidityReadAttempts = 4
     private var packageReadAttempt = 0
+    private var validityReadAttempt = 0
+    private var isScanningValidity = false
+    private var identifiedPackageResponse: VerificarResponse? = null
     private val accumulatedPackageOcr = mutableListOf<String>()
     private val cameraScope = CoroutineScope(Dispatchers.IO)
     private val mainScope = CoroutineScope(Dispatchers.Main)
@@ -390,7 +394,11 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             handleProcessingError("A câmera ainda não está pronta. Tente novamente em alguns segundos.")
             return
         }
-        packageReadAttempt += 1
+        if (isScanningValidity) {
+            validityReadAttempt += 1
+        } else {
+            packageReadAttempt += 1
+        }
         
         val outputFile = createImageFile()
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
@@ -431,7 +439,11 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
                 if (textoOcr.isBlank()) {
                     runOnUiThread {
-                        retryPackageReadOrFinish(getString(R.string.no_text_found))
+                        if (isScanningValidity) {
+                            continueValidityScanOrFinish()
+                        } else {
+                            retryPackageReadOrFinish(getString(R.string.no_text_found))
+                        }
                     }
                     return@launch
                 }
@@ -446,10 +458,16 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                 
                 runOnUiThread {
                     result.onSuccess { response ->
-                        if (response.nome.startsWith("Medicamento não identificado")) {
-                            retryPackageReadOrFinish(response.mensagem ?: getString(R.string.no_text_found), response)
-                        } else {
+                        val identified = !response.nome.startsWith("Medicamento não identificado")
+                        if (identified && response.validade != null) {
                             handleVerificarSuccess(response)
+                        } else if (identified && !isScanningValidity) {
+                            startValidityScan(response)
+                        } else if (isScanningValidity) {
+                            if (identified) identifiedPackageResponse = response
+                            continueValidityScanOrFinish()
+                        } else {
+                            retryPackageReadOrFinish(response.mensagem ?: getString(R.string.no_text_found), response)
                         }
                     }.onFailure { e ->
                         handleProcessingError(e.message ?: getString(R.string.network_error))
@@ -460,6 +478,51 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                 runOnUiThread { handleProcessingError(getString(R.string.network_error)) }
             } finally {
                 file.delete()
+            }
+        }
+    }
+
+    private fun startValidityScan(response: VerificarResponse) {
+        identifiedPackageResponse = response
+        isScanningValidity = true
+        validityReadAttempt = 0
+        updateStatus("${response.nome} — vire para a validade", isDanger = false)
+        vibrationManager.vibrateDoubleShort()
+        ttsManager.speak(
+            "${response.nome} identificado. Agora vire lentamente a embalagem para a parte com a validade e mantenha parado.",
+            TtsManager.UTTERANCE_ID_DEFAULT,
+        ) {
+            mainScope.launch {
+                kotlinx.coroutines.delay(600)
+                focusCameraThen {
+                    updateStatus("Procurando validade — tentativa 1 de $maxValidityReadAttempts", isDanger = false)
+                    captureAndProcessImage()
+                }
+            }
+        }
+    }
+
+    private fun continueValidityScanOrFinish() {
+        val identifiedResponse = identifiedPackageResponse
+        if (validityReadAttempt >= maxValidityReadAttempts) {
+            if (identifiedResponse != null) {
+                handleVerificarSuccess(identifiedResponse)
+            } else {
+                handleProcessingError("Não consegui identificar o medicamento com segurança.")
+            }
+            return
+        }
+
+        val nextAttempt = validityReadAttempt + 1
+        updateStatus("Procurando validade — tentativa $nextAttempt de $maxValidityReadAttempts", isDanger = false)
+        vibrationManager.vibrateShort()
+        ttsManager.speak(
+            "Procurando a validade. Mova um pouco e pare novamente.",
+            TtsManager.UTTERANCE_ID_DEFAULT,
+        ) {
+            mainScope.launch {
+                kotlinx.coroutines.delay(450)
+                focusCameraThen { captureAndProcessImage() }
             }
         }
     }
@@ -487,6 +550,9 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
     private fun resetPackageReadSession() {
         packageReadAttempt = 0
+        validityReadAttempt = 0
+        isScanningValidity = false
+        identifiedPackageResponse = null
         accumulatedPackageOcr.clear()
     }
 
