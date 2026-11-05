@@ -4,6 +4,10 @@ plugins {
     id("kotlin-kapt")
 }
 
+val guiaMedApiBaseUrl = providers.gradleProperty("GUIAMED_API_BASE_URL")
+    .orElse("http://10.0.2.2:8000/")
+    .get()
+
 android {
     namespace = "com.guiamed"
     compileSdk = 34
@@ -15,6 +19,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         vectorDrawables.useSupportLibrary = true
+        buildConfigField("String", "API_BASE_URL", "\"$guiaMedApiBaseUrl\"")
     }
 
     buildTypes {
@@ -31,6 +36,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         viewBinding = true
     }
     packagingOptions {
