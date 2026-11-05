@@ -1,5 +1,6 @@
 package com.guiamed.data
 
+import com.guiamed.BuildConfig
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -21,7 +22,6 @@ interface GuiaMedApi {
     suspend fun lerReceita(@Body request: ReceitaRequest): ReceitaResponse
 
     companion object {
-        private const val BASE_URL = "http://10.0.2.2:8000/"
         private const val TIMEOUT_SECONDS = 15L
 
         fun create(): GuiaMedApi {
@@ -42,7 +42,7 @@ interface GuiaMedApi {
                 .create()
 
             return Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl(BuildConfig.API_BASE_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build()
