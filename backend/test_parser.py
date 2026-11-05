@@ -40,6 +40,31 @@ class MedicationParserTests(unittest.TestCase):
         self.assertEqual("12/2027", response.validade)
         self.assertFalse(response.vencido)
 
+    def test_reads_compact_manufacturing_and_expiration_stamp(self):
+        response = parse_verification(
+            "ROSUVASTATINA 20 MG\nL5M2694\nF02 26\nV02 28",
+            [],
+            today=date(2026, 11, 5),
+        )
+        self.assertEqual("02/2028", response.validade)
+        self.assertFalse(response.vencido)
+
+    def test_corrects_letter_o_in_compact_expiration_stamp(self):
+        response = parse_verification(
+            "ROSUVASTATINA 20 MG VO2 28",
+            [],
+            today=date(2026, 11, 5),
+        )
+        self.assertEqual("02/2028", response.validade)
+
+    def test_does_not_treat_manufacturing_stamp_as_expiration(self):
+        response = parse_verification(
+            "ROSUVASTATINA 20 MG F02 26",
+            [],
+            today=date(2026, 11, 5),
+        )
+        self.assertIsNone(response.validade)
+
     def test_partial_allergy_match_sets_danger(self):
         response = parse_verification("NOVALGINA 500 MG", ["dipirona"])
         self.assertTrue(response.alerta_alergia)

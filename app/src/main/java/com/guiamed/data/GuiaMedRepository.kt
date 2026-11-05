@@ -78,7 +78,7 @@ class GuiaMedRepository(
         val dosage = Regex("\\b(\\d{1,4}(?:[.,]\\d+)?)\\s*(mcg|mg|g|ml)\\b")
             .find(normalized)
             ?.let { "${it.groupValues[1].replace(',', '.')}${it.groupValues[2]}" }
-        val validityMatch = Regex("\\b(?:validade|valid|val|vencimento|venc|vto|expira|exp)\\s*[:.\\-]?\\s*(0?[1-9]|1[0-2])[/\\-. ](\\d{2}|\\d{4})\\b")
+        val validityMatch = Regex("\\b(?:validade|valid|val|vencimento|venc|vto|expira|exp|v)\\s*[:.\\-]?\\s*(0?[1-9]|1[0-2])[/\\-. ](\\d{2}|\\d{4})\\b")
             .find(normalized)
         val validity = validityMatch?.let {
             val year = it.groupValues[2].toInt().let { value -> if (value < 100) value + 2000 else value }
@@ -140,6 +140,14 @@ class GuiaMedRepository(
         var normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
             .replace(Regex("\\p{M}+"), "")
             .lowercase()
+        normalized = Regex("(?<![a-z0-9])([vf])\\s*([0-9oil]{2})\\s*[/\\-. ]\\s*([0-9oil]{2,4})(?![a-z0-9])")
+            .replace(normalized) { match ->
+                fun fixDigits(raw: String) = raw
+                    .replace('o', '0')
+                    .replace('i', '1')
+                    .replace('l', '1')
+                "${match.groupValues[1]} ${fixDigits(match.groupValues[2])}/${fixDigits(match.groupValues[3])}"
+            }
         normalized = Regex("\\b([0-9oil]+(?:[.,][0-9oil]+)?)\\s*(mcg|mg|g|ml)\\b")
             .replace(normalized) { match ->
                 val number = match.groupValues[1]

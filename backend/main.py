@@ -185,6 +185,26 @@ def normalize_ocr(value: str) -> str:
     """Normaliza acentos e confusoes frequentes do OCR sem alterar o original."""
     text = strip_accents(value).upper()
 
+    def fix_compact_package_date(match: re.Match[str]) -> str:
+        label = match.group(1)
+        month = match.group(2).replace("O", "0").replace("I", "1").replace("L", "1")
+        year = match.group(3).replace("O", "0").replace("I", "1").replace("L", "1")
+        return f"{label} {month}/{year}"
+
+    # Fundos de caixa frequentemente juntam a letra ao mês: F02 26
+    # (fabricação) e V02 28 (validade). Separa e corrige O/0 e I/1 antes
+    # da normalização geral de palavras.
+    text = re.sub(
+        r"(?<![A-Z0-9])([VF])\s*([0-9OIL]{2})\s*[/\-. ]\s*([0-9OIL]{2,4})(?![A-Z0-9])",
+        fix_compact_package_date,
+        text,
+    )
+    text = re.sub(
+        r"(?<![A-Z0-9])([VF])([0-9OIL]{2})([0-9OIL]{2})(?![A-Z0-9])",
+        fix_compact_package_date,
+        text,
+    )
+
     def fix_measure(match: re.Match[str]) -> str:
         number = match.group(1).replace("O", "0").replace("I", "1").replace("L", "1")
         return f"{number} {match.group(2)}"
@@ -328,7 +348,7 @@ def extract_expiration(normalized_text: str, today: Optional[date] = None) -> tu
     # Uma data so e validade se estiver explicitamente rotulada. Isso impede
     # confundir lote, fabricacao ou outros numeros da embalagem com vencimento.
     match = re.search(
-        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP)\s*[:.\-]?\s*"
+        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP|V)\s*[:.\-]?\s*"
         r"(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b",
         normalized_text,
     )
