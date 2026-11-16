@@ -1,5 +1,10 @@
 # GuiaMed V1
 
+**Grupo GuiaMed**  
+**Componentes:** João Roberto Santos Cardoso — 231070711; Gabriel de Souza Nascimento — 231071404; Daniel Queiroga Santana Martins — 231070654.  
+**Disciplinas:** Projeto de Inteligência Artificial e Segurança e Otimização de BD.  
+**Entrega de 17/11:** [relatório de andamento](docs/RELATORIO_ANDAMENTO_17_11.md) e [roteiro de evidências de segurança e integração](docs/EVIDENCIAS_SEGURANCA_INTEGRACAO.md).
+
 Aplicativo Android de acessibilidade **Zero Interface** para pessoas cegas ou com baixa visão. O app lê embalagens e receitas, registra alergias por voz e sinaliza risco por fala, vibração e painel de alto contraste.
 
 ## Interação
@@ -24,7 +29,7 @@ Toda ação ou erro usa a tríade de acessibilidade: TTS em pt-BR, vibração e 
 - FastAPI, Pydantic, `asyncpg` e PostgreSQL opcional.
 - `PdfRenderer` nativo para OCR da primeira página de PDFs compartilhados.
 
-O parser do backend normaliza erros comuns de OCR, faz busca aproximada de medicamentos e é conservador: não inventa dosagem nem validade. Uma data só é tratada como validade quando aparece junto de `validade`, `val`, `vencimento` ou `venc`.
+O parser do backend normaliza erros comuns de OCR, faz busca aproximada de medicamentos na base DCB da Anvisa e é conservador: não inventa dosagem nem validade. Ele reconhece rótulos de validade como `VAL`, `VTO` e carimbos compactos de fundo de caixa, por exemplo `V02 28`; uma linha de fabricação, como `F02 26`, não é tratada como validade.
 
 ## Executar o backend
 
@@ -68,7 +73,7 @@ cd backend
 python -m unittest -v test_parser.py
 ```
 
-Os testes cobrem as regressões de Dipirona com erros de OCR, Nimesulida aproximada, Ibuprofeno 600 mg, ausência de validade, validade vencida e alerta de alergia. Para câmera, voz, vibração e acessibilidade, execute também o roteiro de [COMO_TESTAR.md](COMO_TESTAR.md) em aparelho físico.
+Os testes cobrem regressões de OCR, busca aproximada, leitura de receitas em linhas separadas, alertas de alergia, validade vencida e carimbos compactos de validade. Para câmera, voz, vibração e acessibilidade, execute também o roteiro de [COMO_TESTAR.md](COMO_TESTAR.md) em aparelho físico.
 
 ## Segurança e configuração
 
