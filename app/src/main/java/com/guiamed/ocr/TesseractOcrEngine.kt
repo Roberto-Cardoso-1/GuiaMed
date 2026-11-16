@@ -15,7 +15,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 /**
- * OCR usando ML Kit (built-in do Google Play Services — sem dependência externa)
+ * OCR usando o modelo ML Kit incluído no APK, disponível sem internet.
  * Compatível com português brasileiro automaticamente.
  */
 class TesseractOcrEngine(private val context: Context) {

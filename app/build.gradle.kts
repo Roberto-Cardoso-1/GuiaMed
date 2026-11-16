@@ -7,6 +7,9 @@ plugins {
 val guiaMedApiBaseUrl = providers.gradleProperty("GUIAMED_API_BASE_URL")
     .orElse("http://10.0.2.2:8000/")
     .get()
+val guiaMedUseRemoteApi = providers.gradleProperty("GUIAMED_USE_REMOTE_API")
+    .orElse("false")
+    .get()
 
 android {
     namespace = "com.guiamed"
@@ -16,10 +19,11 @@ android {
         applicationId = "com.guiamed"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.0.1"
         vectorDrawables.useSupportLibrary = true
         buildConfigField("String", "API_BASE_URL", "\"$guiaMedApiBaseUrl\"")
+        buildConfigField("boolean", "USE_REMOTE_API", guiaMedUseRemoteApi)
     }
 
     buildTypes {
@@ -72,7 +76,7 @@ dependencies {
     implementation("androidx.camera:camera-video:${camerax_version}")
 
     // ML Kit Text Recognition (built-in, zero dependência externa)
-    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     // Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
