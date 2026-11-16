@@ -3,7 +3,6 @@
 **Grupo GuiaMed**  
 **Componentes:** João Roberto Santos Cardoso — 231070711; Gabriel de Souza Nascimento — 231071404; Daniel Queiroga Santana Martins — 231070654; Pedro Henrique Freitas Couto — 231071331.  
 **Disciplinas:** Projeto de Inteligência Artificial e Segurança e Otimização de BD.  
-**Entrega de 17/11:** [relatório de andamento](docs/RELATORIO_ANDAMENTO_17_11.md) e [roteiro de evidências de segurança e integração](docs/EVIDENCIAS_SEGURANCA_INTEGRACAO.md).
 
 Aplicativo Android de acessibilidade **Zero Interface** para pessoas cegas ou com baixa visão. O app lê embalagens e receitas, registra alergias por voz e sinaliza risco por fala, vibração e painel de alto contraste.
 
