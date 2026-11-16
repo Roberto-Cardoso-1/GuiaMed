@@ -1,6 +1,6 @@
 # Evidências de Segurança e Integração
 
-**Grupo GuiaMed — João Roberto Santos Cardoso (231070711), Gabriel de Souza Nascimento (231071404), Daniel Queiroga Santana Martins (231070654).**
+**Grupo GuiaMed — João Roberto Santos Cardoso (231070711), Gabriel de Souza Nascimento (231071404), Daniel Queiroga Santana Martins (231070654), Pedro Henrique Freitas Couto (231071331).**
 
 Os scripts SQL usam exclusivamente dados fictícios. Execute `db/01_ddl.sql`, `db/03_seed.sql`, `db/05_seed_app.sql` e `db/02_security.sql` nessa ordem, informando a senha do usuário de serviço fora do repositório.
 
