@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     log_level: str = "INFO"
     cors_origins: list[str] = Field(default_factory=list)
+    tz: str = "America/Sao_Paulo"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
