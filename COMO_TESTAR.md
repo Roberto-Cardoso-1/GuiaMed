@@ -3,16 +3,15 @@
 ## Preparação
 
 - JDK 17 e Android SDK 34.
-- Backend FastAPI rodando na porta 8000.
-- Emulador Android para a integração local com `10.0.2.2`, ou um aparelho físico para validar câmera, TTS, STT e vibração com a conectividade do ambiente devidamente preparada.
+- Aparelho físico para validar câmera, TTS, STT e vibração. O computador e a internet podem permanecer desligados durante o teste funcional.
+- Backend FastAPI somente para o teste opcional de integração com banco.
 - Não é necessário baixar `por.traineddata`: o OCR usa ML Kit.
 
-Antes do teste mobile:
+Para validar o código antes do teste mobile:
 
 ```powershell
 cd backend
 python -m unittest -v test_parser.py
-python main.py
 ```
 
 Em outro terminal:
@@ -68,6 +67,14 @@ Para imagem/PDF do WhatsApp ou outro app, use **Compartilhar → GuiaMed**. A pr
 4. Aguarde a confirmação falada.
 5. Leia Dipirona com um toque: deve haver alerta de alergia, painel vermelho e três vibrações longas.
 6. Repita o cadastro e a leitura várias vezes. O app não pode ficar silencioso nem travado após uma sessão anterior.
+
+### Funcionamento sem computador
+
+1. Feche o backend e desligue o Wi-Fi e os dados móveis do celular.
+2. Abra o GuiaMed e cadastre “Dipirona” com três toques.
+3. Leia uma embalagem de Dipirona ou Novalgina com um toque: deve haver alerta de alergia.
+4. Feche o app completamente, abra novamente e repita a leitura: o alerta deve continuar ativo.
+5. Leia uma receita com dois toques e confirme que os dados são processados sem mensagem de conexão com servidor.
 
 ### Quatro toques e toque longo
 

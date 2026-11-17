@@ -1,134 +1,91 @@
-# Arquitetura — GuiaMed (diagrama único IA + dados)
+# Arquitetura executada — GuiaMed
 
-Diagrama único exigido pela **Parte de integração**: banco ligado ao LLM, ao RAG e ao n8n, mostrando onde ficam **permissões (RBAC)**, **proteção de dados** e **auditoria**.
+Esta é a arquitetura realmente implementada e testada na V1. Nenhum SaaS ou
+modelo remoto participa do fluxo.
 
 ```mermaid
-flowchart TB
-    subgraph CANAL["1 · Canal — acessibilidade"]
-        U([Pessoa cega / baixa visão]) -->|foto da embalagem ou receita| APP[App Android zero interface<br/>Tela = câmera · OCR Tesseract no aparelho<br/>TTS/STT p/ voz · alto contraste]
-    end
+flowchart LR
+    U[Pessoa com deficiência visual] --> APP[Android Zero Interface]
+    APP --> OCR[ML Kit OCR local]
+    OCR --> PARSER[Parser local + catálogo DCB]
+    PARSER --> TTS[TTS + vibração + painel]
 
-    subgraph ORQ["2 · Orquestração"]
-        APP -->|HTTPS + device_id| API[API FastAPI sem tela<br/>endpoints /verificar /alergias /receitas]
-        API --> TR[Webhook Trigger<br/>gatilho no n8n a cada foto/fala]
-        subgraph N8N["n8n self-hosted (Docker, sem custo)"]
-            TR --> FT[Extrator FINE-TUNED GPT-4o-mini<br/>texto OCR → JSON: remédio, validade]
-            FT --> ALG{Conflita com<br/>alergia do usuário?}
-            ALG -- sim --> ALERTA[Resposta de ALERTA<br/>prioridade máxima p/ TTS]
-            ALG -- não --> EMB[Embedding do remédio<br/>text-embedding-3-small]
-            EMB --> RAG[Busca RAG<br/>usp_buscar_bulas top-5]
-            RAG --> PROMPT[Monta prompt:<br/>regras + chunks + pergunta]
-            PROMPT --> GPT[GPT-4o-mini<br/>resumo curto p/ fala, com citação]
-            GPT --> POS[Pós-checagem:<br/>citou fonte? bate com o extrator?]
-            POS --> RESP[Resposta JSON p/ API]
-            ALERTA --> RESP
-        end
-        RESP --> API --> APP -->|fala| U
-    end
-
-    subgraph IA["3 · Camada de IA — OpenAI API"]
-        FT
-        EMB
-        GPT
-    end
-
-    subgraph DADOS["4 · Dados — SQL Server 2025"]
-        BULA[(bula_chunk + medicamento<br/>144 chunks · VECTOR 1536)]
-        ALE[(alergia<br/>DADO DE SAÚDE · sensível)]
-        REC[(receita<br/>texto OCR · sensível)]
-        LOG[(consulta_log<br/>AUDITORIA: OCR, resposta,<br/>fonte, tokens, custo)]
-        DSP[(dispositivo<br/>identidade anônima, sem login)]
-        SEC["PROTEÇÕES:<br/>RLS (dono vê só os próprios dados)<br/>DDM em alergia/receita/log<br/>TDE em repouso · TLS em trânsito"]
-        RBAC["PERMISSÕES:<br/>app_ia SÓ executa procedures<br/>DENY em todas as tabelas<br/>rl_farmaceutico / rl_suporte / rl_paciente"]
-    end
-
-    FT -- "chamada API (HTTPS/TLS)" --> OPENAI[(OpenAI API)]
-    GPT -- "chamada API (HTTPS/TLS)" --> OPENAI
-    EMB -- "chamada API (HTTPS/TLS)" --> OPENAI
-    ALG -- "app_ia: EXEC apenas" --> ALE
-    RAG -- "app_ia: EXEC apenas" --> BULA
-    TR -- "app_ia: EXEC apenas" --> DSP
-    API -- "app_ia: EXEC apenas" --> REC
-    POS -- "toda execução é registrada" --> LOG
-    ALE -.-> SEC
-    REC -.-> SEC
-    LOG -.-> SEC
-    DADOS -.-> RBAC
+    N8N[n8n auto-hospedado] -->|POST /rag/consultar| API[FastAPI local]
+    API --> RAG[RAG TF-IDF local]
+    RAG --> CHUNKS[144 chunks de 24 bulas fictícias]
+    RAG --> GEN[Gerador fundamentado com citação]
+    GEN --> N8N
+    API --> AUDIT[(PostgreSQL: auditoria anonimizada)]
+    AUDIT -. RBAC / RLS .-> ROLES[rl_app_ia · rl_paciente · rl_suporte]
 ```
 
-## Componentes (o que cada caixa faz e por quê)
+## Fluxo principal do aplicativo
 
-| Componente | Escolha | Por quê |
-|---|---|---|
-| Interface | **App Android por voz** (CameraX + Tesseract + TTS/STT) falando com **API sem tela** (FastAPI) | O usuário-alvo **não enxerga a tela**: voz é o requisito, não luxo. OCR no aparelho = funciona com internet lenta e não envia imagem para fora. "API sem tela" é formato permitido pelo enunciado |
-| Orquestração | **n8n self-hosted** (Docker) | Exigido pela disciplina; gratuito; nós nativos de webhook, OpenAI e SQL Server; cada execução vira registro auditável |
-| LLM principal | **GPT-4o-mini** | Gera o resumo em linguagem simples para ser falado em até ~30s — ver justificativa e custo abaixo |
-| Extrator | **GPT-4o-mini fine-tuned** | Converte texto OCR ruidoso em JSON `{nome_comercial, principio_ativo, validade}` — ver experimento abaixo |
-| Embeddings | **text-embedding-3-small** (1536 dims) | Mais barato da OpenAI; qualidade suficiente para 144–200 chunks |
-| Banco / vetorial | **SQL Server 2025** (`VECTOR` + `VECTOR_DISTANCE`) | Um banco só para bulas, alergias, receitas, vetor e auditoria; atende à disciplina (TDE, DDM, RLS nativos). Protótipo dev do app usava PostgreSQL; modelo padronizado aqui em SQL Server conforme o enunciado |
-| Identidade do usuário | **device_id anônimo**, sem login/senha | Pessoa cega digitando senha = abandono do app; e menos dado pessoal = menos risco LGPD |
-| Registro | `dbo.consulta_log` via `usp_registrar_consulta` | Toda foto/fala (respondida ou recusada) fica auditável com fonte, tokens e custo |
+O APK funciona sem computador ou internet. CameraX captura a imagem, o ML Kit
+reconhece o texto no próprio aparelho e o parser local identifica medicamento,
+dosagem e validade. Alergias ficam no armazenamento privado do Android. O
+backend acadêmico não é necessário para o funcionamento da V1.
 
-## RAG em detalhe
+## Fluxo acadêmico de IA e integração
 
-| Etapa | Decisão | Justificativa |
-|---|---|---|
-| Fontes | 24 bulas fictícias (`data/bulas_md`, espelho de `data/bulas.json`) | Base controlada, sem dado sensível — ver [dados.md](dados.md) |
-| Chunking | **1 chunk = 1 seção da bula** (144 chunks, ~400–700 caracteres) | Seção de bula é unidade semântica completa; chunking por tamanho fixo cortaria frases como "NUNCA usar diariamente" ao meio |
-| Embeddings | text-embedding-3-small, 1536 dims | US$ 0,02/1M tokens — base inteira custa frações de centavo |
-| Banco vetorial | coluna `VECTOR(1536)` em `bula_chunk`, similaridade `VECTOR_DISTANCE('cosine', ...)` | Vetor junto do dado: mesma linha tem texto, seção e medicamento |
-| Busca | `usp_buscar_bulas`: top-5 por cosseno, pré-filtro por medicamento **extraído do OCR** (quando identificado com confiança) | Apontar a câmera para "Pressormin" filtra a busca na bula certa — leitura em voz precisa ser precisa, não "parecida" |
-| Anti-alucinação | Prompt manda responder **só com os chunks**; pós-checagem exige citação `medicamento#seção` presente nos ids recuperados; se falhar → resposta padrão falada | Regra "sem fonte, sem resposta" — crítica quando a saída é voz e o usuário não pode reler |
+1. O workflow [`n8n/workflows/guiamed_local_rag.json`](../n8n/workflows/guiamed_local_rag.json)
+   recebe uma execução manual reproduzível.
+2. O nó HTTP chama `POST /rag/consultar` na API FastAPI local.
+3. `backend/local_rag.py` divide as 24 bulas fictícias em 144 chunks — uma
+   seção completa por chunk.
+4. A busca TF-IDF retorna os chunks mais relevantes e o gerador determinístico
+   reproduz somente conteúdo recuperado.
+5. Toda resposta válida termina com uma fonte no formato
+   `medicamento#seção`; sem fonte suficiente, o sistema recusa responder.
+6. O backend registra identificador anonimizado, impressão digital da consulta,
+   fontes, horário, latência e custo. O texto livre e o `device_id` original não
+   são persistidos na auditoria.
 
-## Experimento de fine-tuning (Extrator de OCR)
+A execução real está em
+[`evidencias/n8n/execucao_workflow_banco.txt`](../evidencias/n8n/execucao_workflow_banco.txt):
+os três nós terminaram com `executionStatus: success` e o último nó retornou
+`status_evidencia: PASSOU`.
 
-| Item | Decisão |
-|---|---|
-| Tarefa | Extrair do texto OCR ruidoso de embalagem/receita um JSON estrito: `{nome_comercial, principio_ativo, validade}` (campos vazios quando ilegível) |
-| Dados | **300 pares sintéticos rotulados pelo grupo** em JSONL — texto de embalagem com ruído simulado de câmera (acentos perdidos, quebras de linha, trocas 0/O, 1/l, m/rn, cortes de borda) → JSON correto. Amostra em [`data/ft/ocr_extractor_amostra.jsonl`](../data/ft/ocr_extractor_amostra.jsonl); medicamentos da própria base fictícia de 24 bulas |
-| Modelo base | `gpt-4o-mini` (fine-tuning supervisionado OpenAI, 3 épocas) |
-| Métrica | **Acurácia por campo** (exact match no JSON) no conjunto de teste (75 pares, nunca vistos); meta: ≥ 90% em `nome_comercial` + `principio_ativo`. Abaixo do limiar de confiança → o app responde "não identifiquei, aponte novamente" em vez de chutar |
-| Custo do experimento | 300 ex × ~250 tok × 3 épocas ≈ 225k tokens × US$ 3/1M = **≈ US$ 0,68** (uma vez) |
-| Fallback | Se o fine-tuned falhar na meta, extrator zero-shot com regex sobre os 24 nomes conhecidos + GPT-4o-mini — já medido como baseline |
+## Prompts versionados
 
-## Fluxo no n8n (gatilho → IA → ação → registro)
+- [`prompts/v1.md`](../prompts/v1.md): versão inicial, sem citação obrigatória.
+- [`prompts/v2.md`](../prompts/v2.md): fonte obrigatória, recusa segura e texto
+  OCR tratado como dado não confiável.
+- [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md): diferenças entre versões.
 
-1. **Gatilho:** nó *Webhook* recebe da API o texto OCR + `device_id` (foto da embalagem ou da receita).
-2. **Registro inicial:** *SQL node* chama `usp_registrar_consulta` (cria dispositivo se novo, abre o log, fixa o contexto de RLS).
-3. **IA 1 — Extrator (fine-tuned):** nó *OpenAI* com o modelo fine-tuned converte o OCR em JSON estrito.
-4. **Checagem de alergia:** *SQL node* chama `usp_checar_alergia` (princípio ativo extraído × alergias do dispositivo). **Se conflito → resposta de ALERTA falado imediato** (pula o resumo).
-5. **IA 2 — Embedding + RAG:** nó *OpenAI* (embedding do nome identificado) → *SQL node* (`usp_buscar_bulas`, top-5, pré-filtrado pelo medicamento).
-6. **IA 3 — Resumo para voz:** nó *OpenAI* (GPT-4o-mini) com prompt montado (regras + chunks + JSON extraído), gerando fala curta em linguagem simples.
-7. **Ação:** resposta JSON → API → **app fala** (TTS) + mostra texto em alto contraste.
-8. **Registro final:** *SQL node* atualiza o log (resposta, chunks usados, alerta de alergia sim/não, tokens, custo).
+O prompt v2 é aplicado por um gerador determinístico local, eliminando risco de
+alucinação e custo de API.
 
-## Escolha do LLM (justificada) e custo por 1.000 usos
+## Experimento de ajuste supervisionado local
 
-| Critério | GPT-4o-mini ✅ | GPT-4o | Claude Haiku | Llama 3.1 8B (Ollama local) |
-|---|---|---|---|---|
-| Qualidade em PT-BR falado + segue instruções | Boa | Ótima | Boa | Média (precisa prompt maior) |
-| Custo (input/1M, output/1M) | **$0,15 / $0,60** | $2,50 / $10 | $0,80 / $4 | $0 (hardware próprio) |
-| Privacidade | API (dados fictícios; OpenAI não treina com dados de API paga) | idem | idem | **Máxima** (ideal p/ dado de saúde) |
-| Latência (voz exige resposta rápida) | Baixa | Média | Baixa | Depende do PC |
-| Fine-tuning barato | **Sim ($3/1M tok)** | Caro | Não nativo | Local (complexo) |
+Para respeitar a proibição de SaaS, não foi alegado fine-tuning de LLM. O
+experimento executado ajusta um classificador Naive Bayes de n-gramas de
+caracteres para identificar medicamentos em OCR ruidoso:
 
-**Decisão:** GPT-4o-mini — a resposta falada é curta e baseada em RAG, então um modelo "grande" não agrega; custo por uso ≈ **28× menor** que GPT-4o. Plano B documentado: Ollama + Llama 3.1 8B se a disciplina exigir demonstração com privacidade total de dados de saúde (mesma arquitetura, trocando o nó do n8n).
+- 300 exemplos sintéticos e rotulados;
+- 240 para treino e 60 para teste;
+- 24 classes, correspondentes às bulas fictícias;
+- baseline por correspondência exata: **80%**;
+- modelo ajustado: **100%** no conjunto de teste;
+- ganho: **20 pontos percentuais**.
 
-**Estimativa por 1.000 usos** (preços públicos da OpenAI, sujeitos a atualização; 1 uso = fluxo completo de uma foto):
+O script reproduzível é
+[`scripts/run_ai_evidence.py`](../scripts/run_ai_evidence.py), o dataset está em
+[`data/ft/ocr_finetuning_local.jsonl`](../data/ft/ocr_finetuning_local.jsonl) e
+o relatório está em
+[`evidencias/ia/experimento_ajuste_local.md`](../evidencias/ia/experimento_ajuste_local.md).
 
-| Etapa | Tokens/uso | Cálculo | Custo/1.000 usos |
-|---|---|---|---|
-| Extrator (fine-tuned) | ~150 in / ~30 out | 150k×$0,30/1M + 30k×$1,20/1M | $0,081 |
-| Embedding do remédio | ~40 | 40k×$0,02/1M | $0,001 |
-| Resumo p/ voz (GPT-4o-mini) | ~900 in (prompt + chunks) / ~150 out | 0,9M×$0,15/1M + 0,15M×$0,60/1M | $0,225 |
-| **Total** | | | **≈ US$ 0,30 (~R$ 1,70)** |
+## Casos, custo e latência
 
-Custos únicos de preparação: embeddings das 144 chunks (~$0,001) + treino do fine-tuning (~$0,68). Infra de dev (n8n + SQL Server em Docker): **$0**.
+Os cinco casos com entrada, esperado e obtido estão em
+[`evidencias/ia/casos_teste.md`](../evidencias/ia/casos_teste.md). Todos passaram.
+Em 100 execuções locais, a medição registrada em
+[`evidencias/ia/metricas.json`](../evidencias/ia/metricas.json) mostrou latência
+média inferior a 1 ms para o RAG em memória e custo monetário de **US$ 0,00**.
 
-## Ponto difícil — onde a IA pode errar e como medimos
+## Limitações
 
-| Falha | Por que é grave aqui | Como medimos | Meta |
-|---|---|---|---|
-| **Identificação errada do remédio** (OCR ruidoso) | Usuário ouve o nome de um remédio e tem **outro** na mão | Acurácia por campo do extrator em 75 pares de teste | ≥ 90%; abaixo do limiar → "não identifiquei, repita a foto" |
-| **Alucinação de dose/posologia** | Saída é voz: usuário não relê para conferir | Amostra de 50 respostas conferidas contra os chunks citados (citação `medicamento#seção` obrigatória) | Fidelidade ≥ 95% |
-| **Prompt injection pela câmera** | Texto hostil **impresso na embalagem** vira entrada do LLM — usuário nem sabe que atacou | Suíte de 30 payloads (15 falados + 15 impressos fotografados) — [ataques.md](ataques.md) | Bloqueio ≥ 95%; vazamento de prompt = 0 |
+- O conjunto sintético é pequeno e o resultado de 100% não deve ser
+  generalizado para fotos reais.
+- OCR de caligrafia, reflexo e desfoque continuam sendo os maiores riscos.
+- A informação é didática e não substitui médico ou farmacêutico.

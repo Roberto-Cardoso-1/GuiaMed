@@ -1,0 +1,139 @@
+n8n Task Broker ready on 127.0.0.1, port 5679
+Failed to start Python task runner in internal mode. because Python 3 is missing from this system. Launching a Python runner in internal mode is intended only for debugging and is not recommended for production. Users are encouraged to deploy in external mode. See: https://docs.n8n.io/hosting/configuration/task-runners/#setting-up-external-mode
+Execution was successful:
+====================================
+{
+  "data": {
+    "version": 1,
+    "startData": {},
+    "resultData": {
+      "runData": {
+        "Iniciar evidência": [
+          {
+            "startTime": 1794882125129,
+            "executionIndex": 0,
+            "source": [],
+            "hints": [],
+            "executionTime": 1,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {},
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Consultar RAG local": [
+          {
+            "startTime": 1794882125130,
+            "executionIndex": 1,
+            "source": [
+              {
+                "previousNode": "Iniciar evidência",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "hints": [],
+            "executionTime": 45,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "resposta": "Segundo a bula fictícia de Pressormin, na seção indicacao: Tratamento da hipertensão arterial sistêmica (pressão alta) em adultos. Pode ser usado isoladamente ou em associação com outros anti-hipertensivos. Fonte: pressormin#indicacao.",
+                      "fontes": [
+                        "pressormin#indicacao",
+                        "pressormin#contraindicacoes",
+                        "pressormin#posologia"
+                      ],
+                      "medicamento": "Pressormin",
+                      "confianca": 0.8563,
+                      "prompt_version": "v2-local-grounded",
+                      "latencia_ms": 0.444,
+                      "custo_usd": 0,
+                      "auditoria_id": "221bec78-044b-4f94-be66-c2ae8562ca36",
+                      "entrada_hostil_detectada": false
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Validar resposta e auditoria": [
+          {
+            "startTime": 1794882125176,
+            "executionIndex": 2,
+            "source": [
+              {
+                "previousNode": "Consultar RAG local",
+                "previousNodeOutput": 0,
+                "previousNodeRun": 0
+              }
+            ],
+            "hints": [],
+            "executionTime": 50,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "status_evidencia": "PASSOU",
+                      "resposta": "Segundo a bula fictícia de Pressormin, na seção indicacao: Tratamento da hipertensão arterial sistêmica (pressão alta) em adultos. Pode ser usado isoladamente ou em associação com outros anti-hipertensivos. Fonte: pressormin#indicacao.",
+                      "fontes": [
+                        "pressormin#indicacao",
+                        "pressormin#contraindicacoes",
+                        "pressormin#posologia"
+                      ],
+                      "auditoria_id": "221bec78-044b-4f94-be66-c2ae8562ca36",
+                      "latencia_ms": 0.444,
+                      "custo_usd": 0
+                    },
+                    "pairedItem": {
+                      "item": 0
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Validar resposta e auditoria"
+    },
+    "executionData": {
+      "contextData": {},
+      "nodeExecutionStack": [],
+      "metadata": {},
+      "waitingExecution": {},
+      "waitingExecutionSource": {},
+      "runtimeData": {
+        "version": 1,
+        "establishedAt": 1794882125129,
+        "source": "cli",
+        "triggerNode": {
+          "name": "Iniciar evidência",
+          "type": "n8n-nodes-base.manualTrigger"
+        }
+      }
+    }
+  },
+  "mode": "cli",
+  "startedAt": "2026-11-17T02:22:05.126Z",
+  "stoppedAt": "2026-11-17T02:22:05.226Z",
+  "status": "success",
+  "finished": true
+}

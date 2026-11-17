@@ -1,0 +1,82 @@
+Pager usage is off.
+Q1 ANTES - busca textual não indexável com ILIKE
+                                                 QUERY PLAN                                                  
+-------------------------------------------------------------------------------------------------------------
+ Seq Scan on bula_chunk  (cost=0.00..3123.00 rows=5 width=46) (actual time=37.614..37.616 rows=1.00 loops=1)
+   Filter: (content ~~* '%sintético número 49999%'::text)
+   Rows Removed by Filter: 49999
+   Buffers: shared hit=2180 read=318 written=227
+ Planning:
+   Buffers: shared hit=59 read=1
+ Planning Time: 0.560 ms
+ Execution Time: 37.647 ms
+(8 rows)
+
+Q1 DEPOIS - busca textual com índice GIN e full-text search
+CREATE INDEX
+ANALYZE
+                                                            QUERY PLAN                                                            
+----------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on bula_chunk  (cost=21.66..103.74 rows=22 width=45) (actual time=0.100..0.101 rows=1.00 loops=1)
+   Recheck Cond: (search_document @@ '''sintét'' & ''49999'''::tsquery)
+   Heap Blocks: exact=1
+   Buffers: shared hit=10
+   ->  Bitmap Index Scan on ix_bula_chunk_search  (cost=0.00..21.65 rows=22 width=0) (actual time=0.088..0.088 rows=1.00 loops=1)
+         Index Cond: (search_document @@ '''sintét'' & ''49999'''::tsquery)
+         Index Searches: 1
+         Buffers: shared hit=9
+ Planning:
+   Buffers: shared hit=47 read=14 written=14
+ Planning Time: 2.199 ms
+ Execution Time: 0.120 ms
+(12 rows)
+
+Q2 ANTES - filtro temporal e perigo sem índice composto
+DROP INDEX
+psql:C:/meu-sistema/GuiaMed/db/postgres/04_planos_execucao.sql:20: NOTICE:  index "ix_audit_requested_danger" does not exist, skipping
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=37460.06..37460.16 rows=5 width=16) (actual time=99.883..109.668 rows=0.00 loops=1)
+   Group Key: (date_trunc('day'::text, requested_at))
+   Buffers: shared hit=8108 read=23146 written=273
+   ->  Sort  (cost=37460.06..37460.08 rows=5 width=8) (actual time=99.881..109.665 rows=0.00 loops=1)
+         Sort Key: (date_trunc('day'::text, requested_at))
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared hit=8108 read=23146 written=273
+         ->  Gather  (cost=1000.00..37460.00 rows=5 width=8) (actual time=99.861..109.644 rows=0.00 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=8105 read=23146 written=273
+               ->  Parallel Seq Scan on audit_log  (cost=0.00..36459.50 rows=2 width=8) (actual time=72.502..72.502 rows=0.00 loops=3)
+                     Filter: (danger AND (requested_at >= '2026-11-10 00:00:00-03'::timestamp with time zone))
+                     Rows Removed by Filter: 333334
+                     Buffers: shared hit=8105 read=23146 written=273
+ Planning:
+   Buffers: shared hit=68 read=1 written=1
+ Planning Time: 0.400 ms
+ Execution Time: 109.734 ms
+(19 rows)
+
+Q2 DEPOIS - índice parcial por data para alertas críticos
+CREATE INDEX
+ANALYZE
+                                                                       QUERY PLAN                                                                        
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=8.45..8.55 rows=5 width=16) (actual time=0.050..0.050 rows=0.00 loops=1)
+   Group Key: (date_trunc('day'::text, requested_at))
+   Buffers: shared read=2
+   ->  Sort  (cost=8.45..8.46 rows=5 width=8) (actual time=0.049..0.049 rows=0.00 loops=1)
+         Sort Key: (date_trunc('day'::text, requested_at))
+         Sort Method: quicksort  Memory: 25kB
+         Buffers: shared read=2
+         ->  Index Only Scan using ix_audit_requested_danger on audit_log  (cost=0.29..8.39 rows=5 width=8) (actual time=0.045..0.045 rows=0.00 loops=1)
+               Index Cond: (requested_at >= '2026-11-10 00:00:00-03'::timestamp with time zone)
+               Heap Fetches: 0
+               Index Searches: 1
+               Buffers: shared read=2
+ Planning:
+   Buffers: shared hit=26 read=1
+ Planning Time: 0.363 ms
+ Execution Time: 0.075 ms
+(16 rows)
+

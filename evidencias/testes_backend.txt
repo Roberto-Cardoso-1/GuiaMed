@@ -1,0 +1,32 @@
+test_device_identifier_is_anonymized_before_audit (test_local_rag.LocalRagTests.test_device_identifier_is_anonymized_before_audit) ... ok
+test_hostile_text_is_data_and_never_changes_the_rules (test_local_rag.LocalRagTests.test_hostile_text_is_data_and_never_changes_the_rules) ... ok
+test_index_contains_six_sections_for_each_fictitious_medicine (test_local_rag.LocalRagTests.test_index_contains_six_sections_for_each_fictitious_medicine) ... ok
+test_refuses_question_without_grounded_source (test_local_rag.LocalRagTests.test_refuses_question_without_grounded_source) ... ok
+test_retrieves_indication_with_a_verifiable_citation (test_local_rag.LocalRagTests.test_retrieves_indication_with_a_verifiable_citation) ... ok
+test_retrieves_posology_without_inventing_content (test_local_rag.LocalRagTests.test_retrieves_posology_without_inventing_content) ... ok
+test_corrects_common_ocr_errors (test_parser.MedicationParserTests.test_corrects_common_ocr_errors) ... ok
+test_corrects_letter_o_in_compact_expiration_stamp (test_parser.MedicationParserTests.test_corrects_letter_o_in_compact_expiration_stamp) ... ok
+test_does_not_treat_manufacturing_stamp_as_expiration (test_parser.MedicationParserTests.test_does_not_treat_manufacturing_stamp_as_expiration) ... ok
+test_fuzzy_matches_anvisa_dcb_without_guessing_short_words (test_parser.MedicationParserTests.test_fuzzy_matches_anvisa_dcb_without_guessing_short_words) ... 2026-11-16 22:47:02,700 - guiamed - INFO - Catálogo DCB carregado com 10777 denominações
+ok
+test_fuzzy_matches_nimesulida (test_parser.MedicationParserTests.test_fuzzy_matches_nimesulida) ... ok
+test_keeps_ibuprofen_600_mg_and_does_not_invent_expiration (test_parser.MedicationParserTests.test_keeps_ibuprofen_600_mg_and_does_not_invent_expiration) ... ok
+test_loads_broad_official_anvisa_catalog (test_parser.MedicationParserTests.test_loads_broad_official_anvisa_catalog) ... ok
+test_normalization_fixes_numeric_context (test_parser.MedicationParserTests.test_normalization_fixes_numeric_context) ... ok
+test_only_explicit_expiration_is_used (test_parser.MedicationParserTests.test_only_explicit_expiration_is_used) ... ok
+test_partial_allergy_match_sets_danger (test_parser.MedicationParserTests.test_partial_allergy_match_sets_danger) ... ok
+test_reads_common_expiration_label_from_package_bottom (test_parser.MedicationParserTests.test_reads_common_expiration_label_from_package_bottom) ... ok
+test_reads_compact_manufacturing_and_expiration_stamp (test_parser.MedicationParserTests.test_reads_compact_manufacturing_and_expiration_stamp) ... ok
+test_recipe_joins_name_dosage_and_instructions_on_adjacent_lines (test_parser.MedicationParserTests.test_recipe_joins_name_dosage_and_instructions_on_adjacent_lines) ... ok
+test_recipe_preserves_detected_dosage (test_parser.MedicationParserTests.test_recipe_preserves_detected_dosage) ... ok
+test_recipe_stops_context_before_next_medicine (test_parser.MedicationParserTests.test_recipe_stops_context_before_next_medicine) ... ok
+test_recognizes_anvisa_dcb_outside_curated_catalog (test_parser.MedicationParserTests.test_recognizes_anvisa_dcb_outside_curated_catalog) ... ok
+test_recognizes_rosuvastatin_from_front_package (test_parser.MedicationParserTests.test_recognizes_rosuvastatin_from_front_package) ... ok
+test_allergy_and_verification_contract (test_api_contract.ApiContractTests.test_allergy_and_verification_contract) ... ok
+test_recipe_contract_preserves_600_mg (test_api_contract.ApiContractTests.test_recipe_contract_preserves_600_mg) ... ok
+test_routes_expose_the_v1_response_models (test_api_contract.ApiContractTests.test_routes_expose_the_v1_response_models) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.210s
+
+OK

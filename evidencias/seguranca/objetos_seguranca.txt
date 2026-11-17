@@ -1,0 +1,36 @@
+BEGIN
+CREATE EXTENSION
+CREATE SCHEMA
+CREATE SCHEMA
+REVOKE
+REVOKE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+DROP POLICY
+psql:C:/meu-sistema/GuiaMed/db/postgres/01_security.sql:45: NOTICE:  policy "allergy_owner_policy" for relation "guiamed_private.allergy" does not exist, skipping
+CREATE POLICY
+psql:C:/meu-sistema/GuiaMed/db/postgres/01_security.sql:50: NOTICE:  policy "audit_owner_policy" for relation "guiamed_private.audit_log" does not exist, skipping
+DROP POLICY
+CREATE POLICY
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE VIEW
+REVOKE
+REVOKE
+REVOKE
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+GRANT
+COMMIT

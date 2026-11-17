@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import asyncio
 import calendar
+import hashlib
 import json
 import logging
 import re
+import threading
 import unicodedata
+import uuid
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from difflib import SequenceMatcher
@@ -28,6 +31,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from local_rag import get_local_rag
+
 
 class Settings(BaseSettings):
     database_url: Optional[str] = None
@@ -35,6 +40,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     log_level: str = "INFO"
     cors_origins: list[str] = Field(default_factory=list)
+    tz: str = "America/Sao_Paulo"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -48,7 +54,8 @@ logger = logging.getLogger("guiamed")
 
 db_pool: Optional[Pool] = None
 memory_allergies: dict[str, set[str]] = {}
-memory_lock = asyncio.Lock()
+memory_audit: list[dict[str, object]] = []
+memory_lock = threading.RLock()
 
 
 MEDICINES = (
@@ -173,6 +180,24 @@ class HealthResponse(BaseModel):
     timestamp: datetime
 
 
+class RagRequest(BaseModel):
+    device_id: str = Field(..., min_length=1, max_length=200)
+    pergunta: str = Field(..., min_length=3, max_length=4_000)
+    timestamp: int
+
+
+class RagResponse(BaseModel):
+    resposta: str
+    fontes: list[str] = Field(default_factory=list)
+    medicamento: Optional[str] = None
+    confianca: float = Field(..., ge=0.0, le=1.0)
+    prompt_version: str
+    latencia_ms: float = Field(..., ge=0.0)
+    custo_usd: float = Field(..., ge=0.0)
+    auditoria_id: str
+    entrada_hostil_detectada: bool = False
+
+
 def strip_accents(value: str) -> str:
     return "".join(
         char
@@ -184,6 +209,26 @@ def strip_accents(value: str) -> str:
 def normalize_ocr(value: str) -> str:
     """Normaliza acentos e confusoes frequentes do OCR sem alterar o original."""
     text = strip_accents(value).upper()
+
+    def fix_compact_package_date(match: re.Match[str]) -> str:
+        label = match.group(1)
+        month = match.group(2).replace("O", "0").replace("I", "1").replace("L", "1")
+        year = match.group(3).replace("O", "0").replace("I", "1").replace("L", "1")
+        return f"{label} {month}/{year}"
+
+    # Fundos de caixa frequentemente juntam a letra ao mês: F02 26
+    # (fabricação) e V02 28 (validade). Separa e corrige O/0 e I/1 antes
+    # da normalização geral de palavras.
+    text = re.sub(
+        r"(?<![A-Z0-9])([VF])\s*([0-9OIL]{2})\s*[/\-. ]\s*([0-9OIL]{2,4})(?![A-Z0-9])",
+        fix_compact_package_date,
+        text,
+    )
+    text = re.sub(
+        r"(?<![A-Z0-9])([VF])([0-9OIL]{2})([0-9OIL]{2})(?![A-Z0-9])",
+        fix_compact_package_date,
+        text,
+    )
 
     def fix_measure(match: re.Match[str]) -> str:
         number = match.group(1).replace("O", "0").replace("I", "1").replace("L", "1")
@@ -328,7 +373,7 @@ def extract_expiration(normalized_text: str, today: Optional[date] = None) -> tu
     # Uma data so e validade se estiver explicitamente rotulada. Isso impede
     # confundir lote, fabricacao ou outros numeros da embalagem com vencimento.
     match = re.search(
-        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP)\s*[:.\-]?\s*"
+        r"\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP|V)\s*[:.\-]?\s*"
         r"(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b",
         normalized_text,
     )
@@ -546,7 +591,7 @@ async def get_allergies(device_id: str) -> list[str]:
                 device_id,
             )
         return [row["nome_alergia"] for row in rows]
-    async with memory_lock:
+    with memory_lock:
         return sorted(memory_allergies.get(device_id, set()))
 
 
@@ -564,9 +609,60 @@ async def save_allergy(device_id: str, allergy: str) -> list[str]:
                 cleaned,
             )
         return await get_allergies(device_id)
-    async with memory_lock:
+    with memory_lock:
         memory_allergies.setdefault(device_id, set()).add(cleaned)
         return sorted(memory_allergies[device_id])
+
+
+def anonymize_device_id(device_id: str) -> str:
+    return hashlib.sha256(device_id.encode("utf-8")).hexdigest()
+
+
+async def save_rag_audit(
+    device_id: str,
+    question: str,
+    sources: list[str],
+    latency_ms: float,
+) -> str:
+    """Registra metadados da consulta sem persistir o texto livre ou o device_id."""
+    requester_hash = anonymize_device_id(device_id)
+    query_fingerprint = hashlib.sha256(question.encode("utf-8")).hexdigest()
+    if db_pool is not None:
+        try:
+            async with db_pool.acquire() as connection:
+                row = await connection.fetchrow(
+                    """
+                    SELECT guiamed_api.record_consultation(
+                        $1, $2, $3, $4::jsonb, $5, $6
+                    ) AS audit_id
+                    """,
+                    requester_hash,
+                    "rag_local",
+                    query_fingerprint,
+                    json.dumps(sources, ensure_ascii=False),
+                    latency_ms,
+                    0.0,
+                )
+            if row is not None:
+                return str(row["audit_id"])
+        except Exception as exc:
+            logger.warning("Auditoria PostgreSQL indisponível; usando memória: %s", type(exc).__name__)
+
+    audit_id = str(uuid.uuid4())
+    with memory_lock:
+        memory_audit.append(
+            {
+                "audit_id": audit_id,
+                "requester_hash": requester_hash,
+                "operation": "rag_local",
+                "query_fingerprint": query_fingerprint,
+                "sources": list(sources),
+                "requested_at": datetime.now().isoformat(),
+                "latency_ms": latency_ms,
+                "cost_usd": 0.0,
+            }
+        )
+    return audit_id
 
 
 @asynccontextmanager
@@ -632,6 +728,34 @@ async def processar_receita(request: ReceitaRequest) -> ReceitaResponse:
     except Exception as exc:
         logger.exception("Falha ao processar receita")
         raise HTTPException(status_code=500, detail="Erro ao processar receita") from exc
+
+
+@app.post("/rag/consultar", response_model=RagResponse, tags=["IA local"])
+async def consultar_rag_local(request: RagRequest) -> RagResponse:
+    """Consulta as bulas fictícias usando somente processamento local."""
+    try:
+        result = get_local_rag().answer(request.pergunta)
+        sources = list(result.sources)
+        audit_id = await save_rag_audit(
+            request.device_id,
+            request.pergunta,
+            sources,
+            result.latency_ms,
+        )
+        return RagResponse(
+            resposta=result.response,
+            fontes=sources,
+            medicamento=result.medicine,
+            confianca=result.confidence,
+            prompt_version=result.prompt_version,
+            latencia_ms=result.latency_ms,
+            custo_usd=result.cost_usd,
+            auditoria_id=audit_id,
+            entrada_hostil_detectada=result.hostile_input_detected,
+        )
+    except Exception as exc:
+        logger.exception("Falha ao consultar RAG local")
+        raise HTTPException(status_code=500, detail="Erro ao consultar a base local") from exc
 
 
 if __name__ == "__main__":
