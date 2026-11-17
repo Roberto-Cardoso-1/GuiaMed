@@ -1,0 +1,31 @@
+GuiaMed | Duas execuções reais do workflow n8n com PostgreSQL local
+Consulta: existência do mesmo registro fictício de alergia do perfil A
+
+PERFIL A
+{
+  "status": 200,
+  "resposta": {
+    "alergia_registrada": true,
+    "auditoria_id": "248c5d29-d4fa-4f69-832e-58cbc73b8335"
+  }
+}
+
+PERFIL B
+{
+  "status": 403,
+  "resposta": {
+    "detail": {
+      "mensagem": "Acesso negado",
+      "auditoria_id": "f9fb141b-1310-4931-9bea-ec66d3eb2c95"
+    }
+  }
+}
+
+AUDITORIA POSTGRESQL | visão do perfil de suporte
+SET
+                  id                  |                         requester_masked                         |       operation        |          sources          |         requested_at          
+--------------------------------------+------------------------------------------------------------------+------------------------+---------------------------+-------------------------------
+ 248c5d29-d4fa-4f69-832e-58cbc73b8335 | ********************************************************4bfb3294 | demo_alergia_permitida | ["demo:alergia:perfil-a"] | 2026-11-17 10:47:39.288781-03
+ f9fb141b-1310-4931-9bea-ec66d3eb2c95 | ********************************************************7ff4f94e | demo_alergia_negada    | ["demo:alergia:perfil-a"] | 2026-11-17 10:47:45.410571-03
+(2 rows)
+

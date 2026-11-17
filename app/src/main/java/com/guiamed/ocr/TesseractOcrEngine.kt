@@ -12,6 +12,8 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlin.coroutines.resume
 
 /**
@@ -112,20 +114,30 @@ class TesseractOcrEngine(private val context: Context) {
      * inteira, limita imagens excessivamente grandes e combina a leitura
      * original com uma versão em alto contraste.
      */
-    suspend fun recognizeDocumentTextFromBitmap(bitmap: Bitmap): String {
+    suspend fun recognizeDocumentTextFromBitmap(
+        bitmap: Bitmap,
+        needsEnhancedPass: suspend (String) -> Boolean = { true },
+    ): String {
         val prepared = scaleDownForOcr(bitmap, maxDimension = 2400)
         return try {
             val attempts = mutableListOf<String>()
-            attempts += recognizeText(prepared)
-            val enhanced = enhanceForOcr(prepared)
+            val original = recognizeText(prepared)
+            if (!needsEnhancedPass(original)) return original
+            attempts += original
+            val detailed = scaleDownForOcr(bitmap, maxDimension = 3200)
             try {
-                attempts += recognizeText(enhanced)
+                val enhanced = enhanceForOcr(detailed)
+                try {
+                    attempts += recognizeText(enhanced)
+                } finally {
+                    if (currentCoroutineContext().isActive) enhanced.recycle()
+                }
             } finally {
-                enhanced.recycle()
+                if (detailed !== bitmap) detailed.recycle()
             }
             mergeRecognizedLines(attempts)
         } finally {
-            if (prepared !== bitmap) prepared.recycle()
+            if (prepared !== bitmap && currentCoroutineContext().isActive) prepared.recycle()
         }
     }
 

@@ -1,0 +1,37 @@
+{
+  "name": "GuiaMed - consulta protegida de alergia ficticia",
+  "nodes": [
+    {
+      "id": "manual",
+      "name": "Executar demonstração",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "protected",
+      "name": "Consultar alergia fictícia do perfil A",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/rag/demo/alergia",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "response": {
+            "response": { "fullResponse": true, "neverError": true }
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Executar demonstração": {
+      "main": [[{"node": "Consultar alergia fictícia do perfil A", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {}
+}

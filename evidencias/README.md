@@ -11,6 +11,7 @@
 | Volume | `seguranca/volume.txt` |
 | Planos de execução | `seguranca/planos_execucao.txt` |
 | Auditoria da IA | `seguranca/auditoria_n8n.txt` e `permissoes_integracao.txt` |
+| Consulta protegida com dois perfis no n8n | [Respostas HTTP e auditoria no PostgreSQL](n8n/demo_perfis_execucao.txt) |
 
 ## Prints para anexar à entrega
 
@@ -19,6 +20,11 @@
 - `prints/02_seguranca_resumo.png`: oito verificações automatizadas aprovadas.
 - `prints/03_integracao_permissoes.png`: acesso direto negado, função autorizada,
   mascaramento, auditoria e RLS separando os dispositivos A e B.
+- [`prints/04_integracao_n8n_perfis.png`](prints/04_integracao_n8n_perfis.png):
+  resposta permitida para A, acesso negado para B e os dois registros de auditoria.
+
+A [receita fictícia de demonstração](receita_ficticia_demonstracao.png) é
+uma amostra para testar a leitura pela câmera.
 
 Todos os dados usados nas evidências são fictícios ou anonimizados. Arquivos de
 configuração local, credenciais, banco do n8n e ambiente Python não são

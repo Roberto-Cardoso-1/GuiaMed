@@ -11,6 +11,8 @@ from __future__ import annotations
 import asyncio
 import calendar
 import hashlib
+import hmac
+import os
 import json
 import logging
 import re
@@ -26,7 +28,7 @@ from typing import Optional
 
 import asyncpg
 from asyncpg.pool import Pool
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -756,6 +758,51 @@ async def consultar_rag_local(request: RagRequest) -> RagResponse:
     except Exception as exc:
         logger.exception("Falha ao consultar RAG local")
         raise HTTPException(status_code=500, detail="Erro ao consultar a base local") from exc
+
+
+@app.post("/rag/demo/alergia", tags=["IA local"])
+async def consultar_alergia_demo(
+    authorization: str = Header(default=""),
+) -> dict[str, str | bool]:
+    """Consulta acadêmica de um registro fictício fixo, habilitada por tokens locais."""
+    token_a = os.environ.get("GUIAMED_DEMO_TOKEN_A", "")
+    token_b = os.environ.get("GUIAMED_DEMO_TOKEN_B", "")
+    if min(len(token_a), len(token_b)) < 32 or token_a == token_b:
+        raise HTTPException(status_code=404, detail="Demonstração desabilitada")
+    scheme, _, token = authorization.partition(" ")
+    profile = next(
+        (name for name, secret in (("a", token_a), ("b", token_b))
+         if hmac.compare_digest(token.encode(), secret.encode())),
+        None,
+    )
+    if scheme.lower() != "bearer" or profile is None:
+        raise HTTPException(status_code=401, detail="Credencial inválida")
+    if db_pool is None:
+        raise HTTPException(status_code=503, detail="Banco indisponível")
+
+    requester = hashlib.sha256(f"guiamed-demo-academica-perfil-{profile}".encode()).hexdigest()
+    fingerprint = hashlib.sha256(b"demo-alergia-perfil-a").hexdigest()
+    allowed = profile == "a"
+    operation = "demo_alergia_permitida" if allowed else "demo_alergia_negada"
+    async with db_pool.acquire() as connection:
+        async with connection.transaction():
+            await connection.execute("SET LOCAL ROLE rl_app_ia")
+            if allowed:
+                found = await connection.fetchval(
+                    "SELECT guiamed_api.check_allergy($1, $2)",
+                    requester, "substancia-ficticia-demo",
+                )
+            audit_id = await connection.fetchval(
+                """SELECT guiamed_api.record_consultation(
+                    $1, $2, $3, '["demo:alergia:perfil-a"]'::jsonb, 0, 0
+                )""",
+                requester, operation, fingerprint,
+            )
+    if not allowed:
+        raise HTTPException(status_code=403, detail={
+            "mensagem": "Acesso negado", "auditoria_id": str(audit_id),
+        })
+    return {"alergia_registrada": found, "auditoria_id": str(audit_id)}
 
 
 if __name__ == "__main__":

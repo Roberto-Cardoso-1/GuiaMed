@@ -31,6 +31,18 @@ Em outro terminal:
 
 ## Regressões relatadas
 
+### Receita impressa que ficava em captura
+
+1. Em modo avião, enquadre uma receita impressa de teste e dê dois toques rápidos. Confirme que o painel passa de “Capturando receita” para “Lendo texto da receita” antes de anunciar o resultado.
+2. Repita com uma amostra que tenha um medicamento legível e campos ausentes. Confira se o app fala os dados encontrados e indica o que não identificou.
+3. Repita com a lente coberta. Confira se o app anuncia a falha ou orienta uma nova tentativa e volta a aceitar os gestos ao terminar.
+
+### Lanterna ao mudar a iluminação
+
+1. Abra a câmera do app e faça sombra sobre uma caixa ou receita. Antes do gesto, a lanterna deve permanecer apagada.
+2. Ainda na sombra, inicie a leitura da caixa com um toque ou da receita com dois. Em um aparelho com lanterna, ela deve acender em pouca luz e permanecer acesa durante a leitura, mesmo ao sair da sombra ou virar a caixa para ler a validade.
+3. Confira se a lanterna apaga ao terminar, cancelar a busca de validade ou sair do app. Repita em boa luz e confira se a leitura ocorre com a lanterna apagada.
+
 Use caixas reais, com boa luz, texto preenchendo a maior parte do enquadramento e sem reflexo.
 
 | Cenário | Resultado esperado |

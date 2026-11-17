@@ -76,6 +76,33 @@ class OfflineMedicationProcessorTest {
     }
 
     @Test
+    fun parsesAbbreviatedPrescriptionFrequency() {
+        val everyEightHours = processor.parseRecipe("IBUPROFENO 600 MG\nTOMAR DE 8 EM 8 H")
+        val onceDaily = processor.parseRecipe("OMEPRAZOL 20 MG\nTOMAR 1X/DIA")
+
+        assertEquals("de 8 em 8 h", everyEightHours.medicamentos.single().frequencia)
+        assertEquals("1x/dia", onceDaily.medicamentos.single().frequencia)
+    }
+
+    @Test
+    fun readsPrintedDemoFixtureText() {
+        val response = processor.parseRecipe(
+            """
+            RECEITA FICTÍCIA
+            AMOSTRA PARA DEMONSTRAÇÃO
+            IBUPROFENO 600 MG
+            FREQUÊNCIA DE TESTE: DE 8 EM 8 HORAS
+            DOCUMENTO SEM VALIDADE CLÍNICA
+            """.trimIndent(),
+        )
+
+        val medicine = response.medicamentos.single()
+        assertEquals("Ibuprofeno", medicine.nome)
+        assertEquals("600mg", medicine.dosagem)
+        assertEquals("de 8 em 8 horas", medicine.frequencia)
+    }
+
+    @Test
     fun removesSpokenAllergyPrefix() {
         assertEquals(
             "dipirona",

@@ -173,7 +173,9 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             .toList()
             .ifEmpty { listOf(normalize(textOcr)) }
 
-        val detected = normalizedLines.map(::findMedicine)
+        val detected = normalizedLines.map { line ->
+            findMedicine(line, prescription = true)
+        }
         val medicines = mutableListOf<MedicamentoReceita>()
         val seen = mutableSetOf<String>()
 
@@ -273,7 +275,16 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
         return text.trim()
     }
 
-    private fun findMedicine(normalizedText: String): Medicine? {
+    private fun findMedicine(normalizedText: String, prescription: Boolean = false): Medicine? {
+        if (prescription) {
+            for (medicine in curatedMedicines) {
+                if (medicine.aliases.any { alias ->
+                        Regex("""\b${Regex.escape(normalize(alias))}\b""").containsMatchIn(normalizedText)
+                    }) return medicine
+            }
+            findDcbMedicine(normalizedText, allowFuzzy = false)?.let { return it }
+            if (extractDosage(normalizedText) == null) return null
+        }
         val words = Regex("""[A-Z]{3,}""")
             .findAll(normalizedText)
             .map { it.value }
@@ -285,7 +296,7 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
         curatedMedicines.forEach { medicine ->
             medicine.aliases.forEach { alias ->
                 val normalizedAlias = normalize(alias)
-                if (normalizedText.contains(normalizedAlias)) return medicine
+                if (!prescription && normalizedText.contains(normalizedAlias)) return medicine
                 candidates.forEach { candidate ->
                     val score = similarity(normalizedAlias, candidate)
                     if (score > bestScore) {
@@ -298,10 +309,10 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
 
         if (bestScore >= 0.86) return bestMedicine
         findDcbMedicine(normalizedText)?.let { return it }
-        return bestMedicine?.takeIf { bestScore >= 0.72 }
+        return bestMedicine?.takeIf { !prescription && bestScore >= 0.72 }
     }
 
-    private fun findDcbMedicine(normalizedText: String): Medicine? {
+    private fun findDcbMedicine(normalizedText: String, allowFuzzy: Boolean = true): Medicine? {
         if (exactDcbIndex.isEmpty()) return null
 
         val words = Regex("""[A-Z0-9]{2,}""")
@@ -322,7 +333,7 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
                 }
             }
         }
-        if (exactMatch != null) return exactMatch
+        if (exactMatch != null || !allowFuzzy) return exactMatch
 
         val candidates = words.asSequence()
             .filter { it.length >= 7 && it !in nonMedicineWords }
@@ -383,7 +394,9 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             """\b\d{1,2}\s*/\s*\d{1,2}\s*H\b""",
             """\bA CADA \d{1,2} HORAS?\b""",
             """\bDE \d{1,2} EM \d{1,2} HORAS?\b""",
+            """\b(?:A CADA|DE \d{1,2} EM)\s*\d{1,2}\s*H\b""",
             """\b(?:\d{1,2}|UMA|DUAS|TRES)\s*(?:X|VEZ|VEZES)\s*(?:AO|POR)\s*DIA\b""",
+            """\b(?:\d{1,2}\s*(?:X|VEZ|VEZES)\s*/\s*DIA|TODOS OS DIAS|DIARIAMENTE)\b""",
             """\b(?:PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b""",
         )
         patterns.forEach { pattern ->

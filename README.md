@@ -8,7 +8,8 @@ Aplicativo Android de acessibilidade **Zero Interface** para pessoas cegas ou co
 
 ## Interação
 
-Não há botões, menus ou caixas de diálogo próprias do app.
+Com a câmera aberta, a pessoa usa os gestos em qualquer ponto da tela. O
+GuiaMed orienta por voz e vibração, com texto de alto contraste para baixa visão.
 
 | Gesto | Ação | Feedback inicial |
 |---|---|---|
@@ -18,7 +19,11 @@ Não há botões, menus ou caixas de diálogo próprias do app.
 | 4 toques | Repete as instruções e recupera um fluxo interrompido | 1 vibração curta + TTS |
 | Toque longo | Abre as configurações de permissões do app | 2 vibrações curtas + TTS |
 
-Fotos e PDFs também podem ser enviados ao GuiaMed pelo menu **Compartilhar** de outro aplicativo. Não é necessária permissão de armazenamento.
+Para ler uma receita, aponte a câmera para a folha e dê **dois toques rápidos**.
+Para ensaiar, imprima ou abra em outra tela a
+[receita fictícia de demonstração](evidencias/receita_ficticia_demonstracao.png).
+A importação de fotos e PDFs pelo menu **Compartilhar** é um recurso auxiliar
+que depende da navegação no outro aplicativo.
 
 Toda ação ou erro usa a tríade de acessibilidade: TTS em pt-BR, vibração e painel superior. Em alergia, medicamento vencido ou erro crítico, o painel fica vermelho e são emitidas três vibrações longas.
 
@@ -67,6 +72,8 @@ O build normal usa somente o processamento local. Para testar a integração com
 - `GET /health`: estado da API e do armazenamento de alergias.
 - `POST /rag/consultar`: consulta local fundamentada às bulas fictícias, com
   fontes, latência, custo e identificador de auditoria.
+- `POST /rag/demo/alergia`: [demonstração local de acesso por perfil](n8n/README.md#demonstração-de-acesso-por-perfil),
+  com dados fictícios e auditoria no PostgreSQL.
 
 Os modelos Android usam `@SerializedName` e permanecem sincronizados com essas chaves `snake_case`. O corpo OCR e os nomes de alergias não são gravados em logs.
 
@@ -74,7 +81,7 @@ Os modelos Android usam `@SerializedName` e permanecem sincronizados com essas c
 
 ```powershell
 cd backend
-python -m unittest -v test_parser.py
+python -m unittest -v test_parser test_api_contract test_local_rag test_demo_perfis
 ```
 
 Os testes cobrem regressões de OCR, busca aproximada, leitura local de receitas em linhas separadas, alertas de alergia, validade vencida e carimbos compactos de validade. Para câmera, voz, vibração, persistência offline e acessibilidade, execute também o roteiro de [COMO_TESTAR.md](COMO_TESTAR.md) em aparelho físico.
@@ -98,7 +105,8 @@ e os scripts PostgreSQL executáveis estão em [`db/postgres/`](db/postgres/).
 
 ## Documentação do projeto
 
-Os documentos acadêmicos e de arquitetura existentes foram preservados em
-[`docs/`](docs/), junto de [`ENTREGA.md`](ENTREGA.md), dados de demonstração e
-scripts auxiliares.
+- [Relatório em PDF](entrega_17_11/Relatorio_Andamento_17_11.pdf) e [resumo da entrega](ENTREGA.md).
+- [Índice de evidências](evidencias/README.md), com registros de execução e imagens.
+- [Arquitetura](docs/arquitetura.md) e [segurança do banco](docs/seguranca.md).
+- [Roteiro de testes no celular](COMO_TESTAR.md) e [roteiro de apresentação](docs/apresentacao.md).
 

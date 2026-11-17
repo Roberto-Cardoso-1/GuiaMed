@@ -38,6 +38,10 @@ Henrique Freitas Couto — 231071331; Pedro Felipe dos Anjos Santos — 23207064
 - Auditoria registra solicitante anonimizado, operação, fontes e horário.
 - Script e saída: `db/postgres/03_evidencias_integracao.sql` e
   `evidencias/seguranca/permissoes_integracao.txt`.
+- Demonstração acadêmica com a mesma consulta para dois perfis no n8n:
+  A recebeu HTTP 200 e B recebeu HTTP 403. Os dois resultados e a auditoria do
+  PostgreSQL estão na [imagem](evidencias/prints/04_integracao_n8n_perfis.png)
+  e no [registro textual](evidencias/n8n/demo_perfis_execucao.txt).
 
 Todos os dados usados nas provas são fictícios ou anonimizados. Não há chaves,
 senhas, `.env`, keystore ou banco local do n8n no repositório.

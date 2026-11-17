@@ -39,8 +39,15 @@ import com.guiamed.utils.PermissionAccessibilityHelper
 import com.guiamed.utils.TouchDetector
 import com.guiamed.utils.VibrationManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.text.SimpleDateFormat
@@ -48,6 +55,8 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.PermissionRequester {
 
@@ -67,7 +76,12 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
     private var isFlashOn = false
+    @Volatile private var previewLuminosity: Int? = null
     private var isProcessing = false
+        set(value) {
+            field = value
+            if (!value) stopScanLighting()
+        }
     private var hasAnnouncedStartup = false
     private var pendingSharedIntent: Intent? = null
     private var permissionFlowActive = false
@@ -80,8 +94,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private val accumulatedPackageOcr = mutableListOf<String>()
     private val maxPrescriptionReadAttempts = 3
     private var prescriptionReadAttempt = 0
-    private var latestPrescriptionResponse: ReceitaResponse? = null
-    private val accumulatedPrescriptionOcr = mutableListOf<String>()
+    private var prescriptionCaptureJob: Job? = null
     private val cameraScope = CoroutineScope(Dispatchers.IO)
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private lateinit var permissionHelper: PermissionAccessibilityHelper
@@ -256,12 +269,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
             .also { it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luminosity ->
-                // Auto flash baseado na luminosidade
-                if (luminosity < 50 && !isFlashOn) {
-                    toggleFlash(true)
-                } else if (luminosity > 150 && isFlashOn) {
-                    toggleFlash(false)
-                }
+                previewLuminosity = luminosity
             }) }
 
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -319,9 +327,20 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         startActivity(intent)
     }
 
-    private fun toggleFlash(on: Boolean) {
-        camera?.cameraControl?.enableTorch(on)
-        isFlashOn = on
+    private fun startScanLighting() {
+        val activeCamera = camera ?: return
+        // Decide com a lanterna apagada e mantém a decisão durante a leitura.
+        if (activeCamera.cameraInfo.hasFlashUnit() && (previewLuminosity ?: 128) < 50) {
+            activeCamera.cameraControl.enableTorch(true)
+            isFlashOn = true
+        }
+    }
+
+    private fun stopScanLighting() {
+        if (!isFlashOn) return
+        camera?.cameraControl?.enableTorch(false)
+        isFlashOn = false
+        previewLuminosity = null
     }
 
     private fun handleSingleTap() {
@@ -332,6 +351,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         if (isProcessing || permissionFlowActive) return
         isProcessing = true
         resetPackageReadSession()
+        startScanLighting()
         
         vibrationManager.vibrateShort()
         updateStatus("Focando embalagem...", isDanger = false)
@@ -346,14 +366,25 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         if (isProcessing || permissionFlowActive) return
         isProcessing = true
         resetPrescriptionReadSession()
+        startScanLighting()
         
         vibrationManager.vibrateDoubleShort()
         updateStatus("Modo receita", isDanger = false)
-        ttsManager.speak(getString(R.string.prescription_mode), TtsManager.UTTERANCE_ID_DEFAULT) { success ->
-            if (success) {
-                focusCameraThen { capturePrescriptionPhoto() }
-            } else {
-                handleProcessingError("Não foi possível iniciar o modo receita. Tente novamente.")
+        guideAndCapturePrescription(getString(R.string.prescription_mode))
+    }
+
+    private fun guideAndCapturePrescription(message: String) {
+        ttsManager.speak(message, TtsManager.UTTERANCE_ID_DEFAULT) { spoken ->
+            mainScope.launch {
+                if (!spoken) kotlinx.coroutines.delay(2500)
+                if (isProcessing && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                    focusCameraThen {
+                        if (isProcessing && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                            updateStatus("Capturando receita...", isDanger = false)
+                            capturePrescriptionPhoto()
+                        }
+                    }
+                }
             }
         }
     }
@@ -649,21 +680,48 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             return
         }
         prescriptionReadAttempt += 1
-        val outputFile = createImageFile()
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
-        
-        imageCapture.takePicture(
-            outputOptions,
-            cameraExecutor,
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    processPrescriptionImage(outputFile)
+        prescriptionCaptureJob = mainScope.launch {
+            val file = File(cacheDir, "receita-${java.util.UUID.randomUUID()}.jpg")
+            try {
+                withTimeout(6_000) { savePrescriptionPhoto(imageCapture, file) }
+                updateStatus("Lendo texto da receita…", isDanger = false)
+                val response = withTimeout(10_000) {
+                    withContext(Dispatchers.IO) { readPrescriptionPhoto(file) }
                 }
-                override fun onError(exc: ImageCaptureException) {
-                    runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
+                if (response != null && response.medicamentos.isNotEmpty()) {
+                    handlePrescriptionSuccess(response)
+                } else {
+                    retryPrescriptionReadOrFinish(response?.mensagem ?: getString(R.string.no_text_found))
                 }
+            } catch (_: TimeoutCancellationException) {
+                handleProcessingError("A leitura da receita demorou demais. Enquadre a folha e tente novamente.")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w("GuiaMed", "Falha na captura ou leitura da receita", e)
+                retryPrescriptionReadOrFinish(getString(R.string.ocr_error))
+            } finally {
+                file.delete()
             }
-        )
+        }
+    }
+
+    private suspend fun savePrescriptionPhoto(capture: ImageCapture, file: File) {
+        suspendCancellableCoroutine<Unit> { continuation ->
+            capture.takePicture(
+                ImageCapture.OutputFileOptions.Builder(file).build(),
+                ContextCompat.getMainExecutor(this),
+                object : ImageCapture.OnImageSavedCallback {
+                    override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                        if (continuation.isActive) continuation.resume(Unit) else file.delete()
+                    }
+
+                    override fun onError(exc: ImageCaptureException) {
+                        if (continuation.isActive) continuation.resumeWithException(exc) else file.delete()
+                    }
+                },
+            )
+        }
     }
 
     private fun processSharedContent(data: Intent) {
@@ -703,7 +761,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                     return@launch
                 }
                 
-                sendPrescriptionToApi(textoOcr, allowCameraRetry = false)
+                processSharedPrescriptionText(textoOcr)
             } catch (e: Exception) {
                 runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
             }
@@ -719,52 +777,34 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         startActivity(intent)
     }
 
-    private fun processPrescriptionImage(file: File) {
-        cameraScope.launch {
-            try {
-                val bitmap = decodeBitmapRespectingExif(file)
-                    ?: throw IllegalStateException("Imagem inválida")
-                val textoOcr = ocrEngine.recognizeDocumentTextFromBitmap(bitmap)
-                bitmap.recycle()
-                
-                if (textoOcr.isBlank()) {
-                    runOnUiThread { retryPrescriptionReadOrFinish(getString(R.string.no_text_found)) }
-                    return@launch
+    private suspend fun readPrescriptionPhoto(file: File): ReceitaResponse? {
+        val bitmap = decodeBitmapRespectingExif(file) ?: error("Imagem inválida")
+        try {
+            var originalText = ""
+            var originalResponse: ReceitaResponse? = null
+            val text = ocrEngine.recognizeDocumentTextFromBitmap(bitmap) { original ->
+                originalText = original
+                if (original.isNotBlank()) {
+                    originalResponse = repository.lerReceita(this, original).getOrThrow()
                 }
-
-                if (textoOcr !in accumulatedPrescriptionOcr) {
-                    accumulatedPrescriptionOcr.add(textoOcr)
-                }
-                sendPrescriptionToApi(
-                    accumulatedPrescriptionOcr.joinToString("\n"),
-                    allowCameraRetry = true,
-                )
-            } catch (e: Exception) {
-                runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
-            } finally {
-                file.delete()
+                originalResponse?.let(::prescriptionNeedsRetry) ?: true
             }
+            if (text.isBlank() || text == originalText) return originalResponse
+            val enhancedResponse = repository.lerReceita(this, text).getOrThrow()
+            return if (enhancedResponse.medicamentos.isNotEmpty()) enhancedResponse else originalResponse
+        } finally {
+            if (currentCoroutineContext().isActive) bitmap.recycle()
         }
     }
 
-    private fun sendPrescriptionToApi(textoOcr: String, allowCameraRetry: Boolean) {
-        cameraScope.launch {
-            val result = repository.lerReceita(this@MainActivity, textoOcr)
-            runOnUiThread {
-                result.onSuccess { response ->
-                    latestPrescriptionResponse = response
-                    if (
-                        allowCameraRetry &&
-                        prescriptionNeedsRetry(response) &&
-                        prescriptionReadAttempt < maxPrescriptionReadAttempts
-                    ) {
-                        retryPrescriptionReadOrFinish(response.mensagem ?: "Não consegui ler todos os dados da receita.")
-                    } else {
-                        handlePrescriptionSuccess(response)
-                    }
-                }.onFailure { e ->
-                    handleProcessingError(e.message ?: getString(R.string.network_error))
-                }
+    private fun processSharedPrescriptionText(text: String) {
+        mainScope.launch {
+            try {
+                handlePrescriptionSuccess(repository.lerReceita(this@MainActivity, text).getOrThrow())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                handleProcessingError(getString(R.string.ocr_error))
             }
         }
     }
@@ -778,30 +818,21 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
     private fun retryPrescriptionReadOrFinish(message: String) {
         if (prescriptionReadAttempt >= maxPrescriptionReadAttempts) {
-            val partialResponse = latestPrescriptionResponse
-            if (partialResponse != null && partialResponse.medicamentos.isNotEmpty()) {
-                handlePrescriptionSuccess(partialResponse)
-            } else {
-                handleProcessingError(message)
-            }
+            handleProcessingError(message)
             return
         }
 
         val nextAttempt = prescriptionReadAttempt + 1
-        val retryMessage = "Não consegui ler todos os dados. Aproxime a receita, mantenha a folha reta e parada. Tentativa $nextAttempt de $maxPrescriptionReadAttempts."
+        val retryMessage = "Aproxime a receita e fique parado."
         updateStatus("Ajustando receita — tentativa $nextAttempt de $maxPrescriptionReadAttempts", isDanger = false)
         vibrationManager.vibrateDoubleShort()
-        ttsManager.speak(retryMessage, TtsManager.UTTERANCE_ID_DEFAULT) { spoken ->
-            if (spoken && isProcessing) {
-                focusCameraThen { capturePrescriptionPhoto() }
-            }
-        }
+        guideAndCapturePrescription(retryMessage)
     }
 
     private fun resetPrescriptionReadSession() {
         prescriptionReadAttempt = 0
-        latestPrescriptionResponse = null
-        accumulatedPrescriptionOcr.clear()
+        prescriptionCaptureJob?.cancel()
+        prescriptionCaptureJob = null
     }
 
     private fun handlePrescriptionSuccess(response: ReceitaResponse) {
@@ -948,6 +979,12 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
     override fun onPause() {
         super.onPause()
+        if (prescriptionCaptureJob?.isActive == true) {
+            resetPrescriptionReadSession()
+            isProcessing = false
+        }
+        stopScanLighting()
+        previewLuminosity = null
         speechRecognitionManager.stopListening()
         ttsManager.stop()
     }

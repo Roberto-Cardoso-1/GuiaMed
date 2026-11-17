@@ -52,6 +52,8 @@ evidencias/n8n/backend.stderr.txt
 # Bancos e ferramentas locais de evidência
 .evidence-db/
 .n8n-local/
+.demo-perfis-*/
+.edge-demo-*/
 
 # Temporary files
 *.tmp
