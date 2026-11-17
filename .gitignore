@@ -54,6 +54,7 @@ evidencias/n8n/backend.stderr.txt
 .n8n-local/
 .demo-perfis-*/
 .edge-demo-*/
+models/
 
 # Temporary files
 *.tmp

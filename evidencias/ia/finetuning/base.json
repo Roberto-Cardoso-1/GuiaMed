@@ -1,0 +1,295 @@
+{
+  "accuracy": 0.14583333333333334,
+  "target_loss": 7.261649553974469,
+  "mean_request_ms": 866.9724250000003,
+  "cases": [
+    {
+      "input": "Alergonix\nfeniradina\nlote  ficticio",
+      "expected": "Alergonix",
+      "obtained": "Alergonix",
+      "correct": true
+    },
+    {
+      "input": "receita: Alergonix comprimido 5 mg t0rnar conforme orientacao",
+      "expected": "Alergonix",
+      "obtained": "Alergonix comprimido 5 mg t0rnar conforme",
+      "correct": false
+    },
+    {
+      "input": "MEDIAMENTO\nANSIOPLANT PRINCIPIO ATIV0 EXTRATO SEC0 DE PASSFLORA BRAS11IENSS",
+      "expected": "Ansioplant",
+      "obtained": "MEDIAMENTO",
+      "correct": false
+    },
+    {
+      "input": "REC3ITA: ANSIOPLANT CÁPSULA 250 MG TOMAR CONFORME ORIENTACA0",
+      "expected": "Ansioplant",
+      "obtained": "100000000000000",
+      "correct": false
+    },
+    {
+      "input": "ASMAPLUS\nBRONFEROL\nLOTE F1CTICIO",
+      "expected": "Asmaplus",
+      "obtained": "ASMAPLUS",
+      "correct": true
+    },
+    {
+      "input": "receita: Asrnaplus aerossl in4latório 100 mc/dose tomar conform3 orientacao",
+      "expected": "Asmaplus",
+      "obtained": "Asrnaplus aerossl in4latório 100",
+      "correct": false
+    },
+    {
+      "input": "CAIXA DE CARIOVAST - NERVASTATINA CÁICA - USO ORAL",
+      "expected": "Cardiovast",
+      "obtained": "CAIXA DE CARIOVAST - NERVASTATINA C�",
+      "correct": false
+    },
+    {
+      "input": "CARDIOVAST COMPRRNID0 20 MG VALIDADE 12/28",
+      "expected": "Cardiovast",
+      "obtained": "CARDIOVAST COMPRRNID0 20 MG VALID",
+      "correct": false
+    },
+    {
+      "input": "RECEITA: CEFATRAX COMPRIMIDO 50 MG TOMAR CONFORME ORIENTACAO",
+      "expected": "Cefatrax",
+      "obtained": "Medicamento ficticio no OCR. Responda apenas o nome",
+      "correct": false
+    },
+    {
+      "input": "MEDIC4ENTO\nCEFATRAX PRINCIPIO ATIV0 CETRAXATO DE POTÁSSIO",
+      "expected": "Cefatrax",
+      "obtained": "MEDIC4ENTO",
+      "correct": false
+    },
+    {
+      "input": "receita: Ciclofem comprimido 0,03 mg + 0,15 mg tomar conforme orientac4o",
+      "expected": "Ciclofem",
+      "obtained": "Ciclofem comprimido 0,03 mg + 0",
+      "correct": false
+    },
+    {
+      "input": "rceita: Ciclofem comprimido 0,03 mg + 0,15 mg tomar c0nforme orientacao",
+      "expected": "Ciclofem",
+      "obtained": "Ciclofem comprimido 0,03 mg + 0",
+      "correct": false
+    },
+    {
+      "input": "receita: Cortiderrn crerne dermatológico tomar conforme orientaao",
+      "expected": "Cortiderm",
+      "obtained": "Cortiderrn crerne dermatológico tomar conforme orient",
+      "correct": false
+    },
+    {
+      "input": "MEDICAMENTO CORTIDERM PRINCIPIO ATIVO CORISONIL 1%",
+      "expected": "Cortiderm",
+      "obtained": "MEDICAMENTO CORTIDERM PRINCIPIO AT",
+      "correct": false
+    },
+    {
+      "input": "MEDICAMENTO  DERMAOPOL PRINCIPIO ATIVO SULFATO DE POLIDERMINA + BACITR4CINA ZÍN1CA",
+      "expected": "Dermatopol",
+      "obtained": "MEDICAMENTO  DERMAOPOL PRINCIPIO",
+      "correct": false
+    },
+    {
+      "input": "DERMATOPOL PORNADA DERMATOLÓGICA VALIDADE 12/28",
+      "expected": "Dermatopol",
+      "obtained": "DERMATOPOL PORNADA DERMATOLÓG",
+      "correct": false
+    },
+    {
+      "input": "C4IXA DE DORFANOL - P4RAXETAMOL - USO 0RAL",
+      "expected": "Dorfanol",
+      "obtained": "C4IXA DE DORFANOL - P4RAXET",
+      "correct": false
+    },
+    {
+      "input": "RCEITA:\nDORFANOL COMPIMIDO 750 MG TOMAR CONFORE ORIENTACAO",
+      "expected": "Dorfanol",
+      "obtained": "RCEITA:",
+      "correct": false
+    },
+    {
+      "input": "medicamento Frrnato princ1pio ativo ferr1polimltosado",
+      "expected": "Ferronato",
+      "obtained": "Medicamento Frrnato princ1pio ativo ferr1pol",
+      "correct": false
+    },
+    {
+      "input": "caixa\nd3 Ferronato - ferripoimaltosado - uso oral",
+      "expected": "Ferronato",
+      "obtained": "Ferronato",
+      "correct": true
+    },
+    {
+      "input": "Fungitrat\nfungiderm 1%\nlote ficticio",
+      "expected": "Fungitrat",
+      "obtained": "Fungitrat",
+      "correct": true
+    },
+    {
+      "input": "CAIXA DE FUNGITRAT - FNGID3RM 1% - USO ORAL",
+      "expected": "Fungitrat",
+      "obtained": "CAIXA DE FUNGITRAT - FNGID3RM",
+      "correct": false
+    },
+    {
+      "input": "RECEIT4: GL1FORIN COMPRIRNIDO 500 RNG T0MAR CONFORME ORI3NTACAO",
+      "expected": "Gliforin",
+      "obtained": "GL1FORIN COMPRIRNIDO 500 RNG T",
+      "correct": false
+    },
+    {
+      "input": "Glif0in comprim1do 500 g validade 12/28",
+      "expected": "Gliforin",
+      "obtained": "Glif0in comprim1do 500 g validade",
+      "correct": false
+    },
+    {
+      "input": "M3DICAMENTO INSULFORT PRINCIPIO ATIVO INSULINA ISOLENTA HUMANA RECOMBINANTE",
+      "expected": "Insulfort",
+      "obtained": "M3DICAMENTO INSULFORT PRINCIPIO",
+      "correct": false
+    },
+    {
+      "input": "INSULFORT SUSPENSÃ0 INJETÁVEL 100 I/ML VALIDADE 12/28",
+      "expected": "Insulfort",
+      "obtained": "Medicamento ficticio no OCR. Responda apenas o nome",
+      "correct": false
+    },
+    {
+      "input": "M1granol\nbetanoll\nlote ficticio",
+      "expected": "Migranol",
+      "obtained": "M1granol",
+      "correct": false
+    },
+    {
+      "input": "medicamento\nMigranol prinipio t1vo btanolol",
+      "expected": "Migranol",
+      "obtained": "Migranol",
+      "correct": true
+    },
+    {
+      "input": "Ofalil\nlacrimetil 0,5%\nlote ficticio",
+      "expected": "Oftalmil",
+      "obtained": "Ofalil",
+      "correct": false
+    },
+    {
+      "input": "MDICAMENTO OFTLMIL PRINCIPIO ATIV0 LACRMTIL 0,5%",
+      "expected": "Oftalmil",
+      "obtained": "MDICAMENTO OFTLMIL PRINCIPIO ATIV",
+      "correct": false
+    },
+    {
+      "input": "caixa de Pressormin - l0saprilato d3 sódio - uso oral",
+      "expected": "Pressormin",
+      "obtained": "caixa de Pressormin - l0saprilato d3",
+      "correct": false
+    },
+    {
+      "input": "receita: Pressormin comprimido 10 mg tornar conforme orientacao",
+      "expected": "Pressormin",
+      "obtained": "Medicamento ficticio no OCR. Responda apenas o nome",
+      "correct": false
+    },
+    {
+      "input": "MEDICARNENTO PROB1ONEX PRINCIPI ATIVO BLEND PROBIÓTICO (LACT0BACI1LUS BR-1 + BIFIDOBACT3RIM BR-2)",
+      "expected": "Probionex",
+      "obtained": "MEDICARNENTO PROB1ONEX PRINCIPI AT",
+      "correct": false
+    },
+    {
+      "input": "medicmeto  Pobionx principio ativ0 blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)",
+      "expected": "Probionex",
+      "obtained": "medicamento 001",
+      "correct": false
+    },
+    {
+      "input": "MEDICAMENTO RUMAXIL PRINCIPIO ATIVO REUMEXATO",
+      "expected": "Reumaxil",
+      "obtained": "MEDICAMENTO RUMAXIL PRINCIPIO ATIV",
+      "correct": false
+    },
+    {
+      "input": "rceita:  Rumaxil coprim1do 2,5 rng tomar conorme orientacao",
+      "expected": "Reumaxil",
+      "obtained": "Rumaxil",
+      "correct": false
+    },
+    {
+      "input": "CAXA DE SMNIVALE - EXTATO S3CO DE VALERI4NA MONNA - USO ORA",
+      "expected": "Somnivale",
+      "obtained": "CAXA DE SMNIVALE - EXTATO S3CO DE",
+      "correct": false
+    },
+    {
+      "input": "Somniale\nextr4to\nseco de Valeriana montana\n1ote f1cticio",
+      "expected": "Somnivale",
+      "obtained": "Valeriana montana",
+      "correct": false
+    },
+    {
+      "input": "T1reonorm\nlevoironato de sódio\nl0te f1ctic1o",
+      "expected": "Tireonorm",
+      "obtained": "O que é o que é o que é o que é o que é",
+      "correct": false
+    },
+    {
+      "input": "Tireonorm\nlevotironato de sódio\nlote ficticio",
+      "expected": "Tireonorm",
+      "obtained": "Tireonorm",
+      "correct": true
+    },
+    {
+      "input": "Tsseclear\nmucoclear\nlote ficticio",
+      "expected": "Tosseclear",
+      "obtained": "Tsseclear",
+      "correct": false
+    },
+    {
+      "input": "Tosseclear xarope 40 mg/mL validade 12/28",
+      "expected": "Tosseclear",
+      "obtained": "Tosseclear xarope 40 mg/mL validade 1",
+      "correct": false
+    },
+    {
+      "input": "Venoca1m\nvenoflav\nlote ficticio",
+      "expected": "Venocalm",
+      "obtained": "Venoca1m",
+      "correct": false
+    },
+    {
+      "input": "receta:\nV3nocalm 0mrimdo 450 mg tomar conf0rm3 orientacao",
+      "expected": "Venocalm",
+      "obtained": "receta:",
+      "correct": false
+    },
+    {
+      "input": "Ventacid\nhidróxido  de magnidril + simeticna\nlote ficticio",
+      "expected": "Ventacid",
+      "obtained": "Ventacid",
+      "correct": true
+    },
+    {
+      "input": "caixa\nde V3ntacid - hidróxid0 de agnidril + sirn3tic0na - us0 oral",
+      "expected": "Ventacid",
+      "obtained": "hidróxid0 de agnidril + sirn3tic0",
+      "correct": false
+    },
+    {
+      "input": "caixa de Vitabex - complexo B (B1, B6, B12) - us oral",
+      "expected": "Vitabex",
+      "obtained": "caixa de Vitabex - complexo B (B1, B",
+      "correct": false
+    },
+    {
+      "input": "Vitab3x\ncápsula validad3 12/28",
+      "expected": "Vitabex",
+      "obtained": "Vitab3x",
+      "correct": false
+    }
+  ]
+}

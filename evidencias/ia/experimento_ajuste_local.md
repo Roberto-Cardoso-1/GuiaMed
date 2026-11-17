@@ -1,10 +1,14 @@
 # Experimento local de ajuste supervisionado
 
+Este registro descreve o experimento inicial de classificação. A entrega foi
+complementada com o [fine-tuning de um LLM pré-treinado](finetuning/README.md),
+que possui dados separados de treino/teste, logs e comparação antes/depois.
+
 O experimento usa somente as 24 bulas fictícias do projeto. Foram gerados 300
 textos OCR sintéticos e rotulados, com 240 exemplos de treino e 60 de teste.
 
-Não foi feito fine-tuning de LLM. Para respeitar a proibição de SaaS, foi
-ajustado localmente um classificador Naive Bayes de n-gramas de caracteres para
+Neste experimento inicial foi ajustado localmente um classificador Naive Bayes
+de n-gramas de caracteres para
 identificação do medicamento em OCR ruidoso.
 
 | Medição | Resultado |

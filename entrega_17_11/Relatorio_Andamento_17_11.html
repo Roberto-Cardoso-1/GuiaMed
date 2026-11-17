@@ -25,7 +25,7 @@
     <div class="members">João Roberto Santos Cardoso — 231070711; Gabriel de Souza Nascimento — 231071404;<br>
       Daniel Queiroga Santana Martins — 231070654; Pedro Henrique Freitas Couto — 231071331;<br>
       Pedro Felipe dos Anjos Santos — 232070649.</div>
-    <div>github.com/Roberto-Cardoso-1/GuiaMed/tree/fix/v1-feedback</div>
+    <div>github.com/Roberto-Cardoso-1/GuiaMed</div>
   </header>
 
   <h2>Parte comum — relatório de andamento</h2>
@@ -35,7 +35,7 @@
 
   <h2>Parte de IA</h2>
   <p>O fluxo comprovado é <code>n8n local → POST /rag/consultar → FastAPI → RAG TF-IDF → resposta citada → auditoria</code>. A base tem 24 bulas fictícias e 144 chunks. O workflow executou três nós com sucesso e retornou <code>status_evidencia: PASSOU</code>, fonte <code>pressormin#indicacao</code>, auditoria, latência e custo.</p>
-  <p>Os prompts v1 e v2 estão versionados; a v2 exige fonte, trata OCR como dado não confiável e recusa respostas sem evidência. Cinco casos documentam entrada, esperado e obtido; todos passaram. O experimento local gerou 300 exemplos OCR sintéticos (240 treino/60 teste, 24 classes): baseline de 80% e classificador ajustado de 100% no teste sintético, ganho de 20 pontos. Em 100 consultas, a latência média ficou abaixo de 1 ms e o custo foi US$ 0,00. Não foi usado SaaS nem alegado fine-tuning de LLM.</p>
+  <p>Os prompts v1 e v2 estão versionados. Cinco casos do RAG documentam entrada, esperado e obtido, com cinco aprovações. Foi executado fine-tuning local do <strong>SmolLM2-135M-Instruct por LoRA</strong>, com 252 exemplos de treino e 48 de teste (24 classes fictícias), três épocas e 189 atualizações. Na mesma avaliação de geração livre, o original acertou 7/48 (14,58%) e o ajustado 30/48 (62,50%), ganho de 47,92 pontos. A perda média caiu de 7,2616 para 0,4388. O treino durou 172,50 s em CPU. A avaliação por exemplo levou 866,97 ms no original e 383,84 ms no ajustado, incluindo perda e geração. O custo de API foi US$ 0, sem medição elétrica. Dados, pesos LoRA, logs e todos os erros estão em <code>evidencias/ia/finetuning/</code>. Os templates sintéticos limitam a generalização. O RAG em memória manteve média abaixo de 1 ms em 100 consultas.</p>
 
   <div class="page-break"></div>
   <h2>Parte de Segurança e Otimização</h2>

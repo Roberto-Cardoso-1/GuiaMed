@@ -6,6 +6,7 @@
 | Prompts versionados | `../prompts/v1.md`, `v2.md` e `CHANGELOG.md` |
 | Cinco casos de IA | `ia/casos_teste.md` |
 | Ajuste supervisionado | `ia/experimento_ajuste_local.md` e `ia/metricas.json` |
+| Fine-tuning de LLM pré-treinado | [Treino LoRA e comparação com o original](ia/finetuning/README.md) |
 | Custo e latência | `ia/metricas.json` |
 | Papéis, RLS e mascaramento | `seguranca/permissoes_integracao.txt` |
 | Volume | `seguranca/volume.txt` |
@@ -25,6 +26,10 @@
 
 A [receita fictícia de demonstração](receita_ficticia_demonstracao.png) é
 uma amostra para testar a leitura pela câmera.
+
+O [resumo visual do fine-tuning](prints/05_finetuning_llm.png) foi gerado
+a partir das métricas e do histórico do treino local. Os arquivos completos
+estão em [`ia/finetuning/`](ia/finetuning/).
 
 Todos os dados usados nas evidências são fictícios ou anonimizados. Arquivos de
 configuração local, credenciais, banco do n8n e ambiente Python não são

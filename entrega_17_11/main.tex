@@ -19,7 +19,7 @@
 \small João Roberto Santos Cardoso --- 231070711; Gabriel de Souza Nascimento --- 231071404;\\
 Daniel Queiroga Santana Martins --- 231070654; Pedro Henrique Freitas Couto --- 231071331;\\
 Pedro Felipe dos Anjos Santos --- 232070649.\\[0.25em]
-\url{https://github.com/Roberto-Cardoso-1/GuiaMed/tree/fix/v1-feedback}
+\url{https://github.com/Roberto-Cardoso-1/GuiaMed}
 \end{center}
 
 \section*{Parte comum --- relatório de andamento}
@@ -34,7 +34,7 @@ Pedro Felipe dos Anjos Santos --- 232070649.\\[0.25em]
 
 O fluxo comprovado é \texttt{n8n local -> POST /rag/consultar -> FastAPI -> RAG TF-IDF -> resposta citada -> auditoria}. A base tem 24 bulas fictícias e 144 chunks (uma seção por chunk). O workflow versionado executou três nós com sucesso e retornou \texttt{status\_evidencia: PASSOU}, fonte \texttt{pressormin\#indicacao}, auditoria, latência e custo.
 
-Os prompts v1 e v2 estão versionados; a v2 exige fonte, trata OCR como dado não confiável e recusa respostas sem evidência. Cinco casos documentam entrada, esperado e obtido; todos passaram. O experimento local gerou 300 exemplos OCR sintéticos (240 treino/60 teste, 24 classes): baseline exato de 80\% e classificador Naive Bayes ajustado de 100\% no teste sintético, ganho de 20 pontos. Em 100 consultas, a latência média do RAG em memória ficou abaixo de 1 ms e o custo foi US\$ 0,00. Não foi usado SaaS nem alegado fine-tuning de LLM.
+Os prompts v1 e v2 estão versionados. Cinco casos do RAG documentam entrada, esperado e obtido, com cinco aprovações. Foi executado fine-tuning local do \textbf{SmolLM2-135M-Instruct por LoRA}, com 252 exemplos de treino e 48 de teste (24 classes fictícias), três épocas e 189 atualizações. Na mesma avaliação de geração livre, o original acertou 7/48 (14,58\%) e o ajustado 30/48 (62,50\%), ganho de 47,92 pontos. A perda média caiu de 7,2616 para 0,4388. O treino durou 172,50 s em CPU. A avaliação por exemplo levou 866,97 ms no original e 383,84 ms no ajustado, incluindo perda e geração. O custo de API foi US\$ 0, sem medição elétrica. Dados, pesos LoRA, logs e todos os erros estão em \texttt{evidencias/ia/finetuning/}. Os templates sintéticos limitam a generalização. O RAG em memória manteve média abaixo de 1 ms em 100 consultas.
 
 \newpage
 

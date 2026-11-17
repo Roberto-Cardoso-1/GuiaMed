@@ -21,6 +21,9 @@ Henrique Freitas Couto — 231071331; Pedro Felipe dos Anjos Santos — 23207064
 - Cinco casos com entrada, esperado e obtido: `evidencias/ia/casos_teste.md`.
 - Ajuste supervisionado local: 300 exemplos, baseline 80% e modelo ajustado
   100% no teste sintético: `evidencias/ia/experimento_ajuste_local.md`.
+- Fine-tuning do SmolLM2-135M-Instruct por LoRA, com comparação contra o
+  modelo original e resultados preliminares em
+  [`evidencias/ia/finetuning/`](evidencias/ia/finetuning/).
 - Latência e custo medidos: `evidencias/ia/metricas.json`.
 
 ## Parte de Segurança

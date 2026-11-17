@@ -14,13 +14,13 @@
   `status_evidencia: PASSOU`.
 - Mostrar `prompts/v1.md`, `v2.md` e o changelog.
 
-## 2:15–3:10 — testes e ajuste supervisionado
+## 2:15–3:10 — testes e fine-tuning
 
-- 300 exemplos: 240 treino, 60 teste e 24 classes.
-- Baseline exato: 80%; classificador ajustado localmente: 100% no conjunto
-  sintético de teste.
+- SmolLM2-135M-Instruct com LoRA, 252 exemplos de treino e 48 de teste.
+- Mesmo teste com geração livre antes/depois. Acurácia de 14,58% para 62,50%,
+  perda de 7,2616 para 0,4388 e 189 atualizações em CPU.
 - Cinco casos RAG passaram; custo local US$ 0 e latência média abaixo de 1 ms.
-- Explicar que 100% no conjunto sintético não garante desempenho em fotos reais.
+- Mostrar os erros preservados em `evidencias/ia/finetuning/ajustado.json`.
 
 ## 3:10–4:20 — segurança, otimização e integração
 

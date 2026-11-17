@@ -56,10 +56,21 @@ os três nós terminaram com `executionStatus: success` e o último nó retornou
 O prompt v2 é aplicado por um gerador determinístico local, eliminando risco de
 alucinação e custo de API.
 
-## Experimento de ajuste supervisionado local
+## Fine-tuning local de LLM
 
-Para respeitar a proibição de SaaS, não foi alegado fine-tuning de LLM. O
-experimento executado ajusta um classificador Naive Bayes de n-gramas de
+O experimento de fine-tuning usa SmolLM2-135M-Instruct com LoRA nas projeções
+de atenção. A tarefa é retornar o nome comercial fictício a partir de OCR
+ruidoso. O script compara geração livre do modelo original e do modelo ajustado
+nas mesmas 48 entradas de teste, separadas dos 252 exemplos de treino.
+Os resultados, parâmetros e respostas estão em
+[`evidencias/ia/finetuning/`](../evidencias/ia/finetuning/).
+O treino é executado na CPU local e o adaptador é salvo em
+`models/ocr-smollm2-lora/`. Esse experimento acadêmico é executado pelo script
+`scripts/run_llm_finetuning.py`.
+
+## Experimento anterior de classificação
+
+O experimento anterior ajusta um classificador Naive Bayes de n-gramas de
 caracteres para identificar medicamentos em OCR ruidoso:
 
 - 300 exemplos sintéticos e rotulados;

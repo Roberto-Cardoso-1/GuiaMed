@@ -96,6 +96,15 @@ Os resultados ficam em [`evidencias/`](evidencias/). O workflow importável est�
 em [`n8n/workflows/guiamed_local_rag.json`](n8n/workflows/guiamed_local_rag.json)
 e os scripts PostgreSQL executáveis estão em [`db/postgres/`](db/postgres/).
 
+## Experimento de fine-tuning
+
+Use Python 3.12 em um ambiente virtual próprio e instale
+`scripts/requirements-finetuning.txt`. Execute
+`python scripts/run_llm_finetuning.py` na raiz. O script baixa a revisão
+fixada do SmolLM2, mede o original, treina LoRA e mede o ajustado.
+Os [resultados preliminares](evidencias/ia/finetuning/README.md) incluem
+as respostas de teste, o histórico de treino e os hashes do adaptador.
+
 ## Segurança e configuração
 
 - Não versionar `.env`, credenciais, keystores ou `local.properties`.

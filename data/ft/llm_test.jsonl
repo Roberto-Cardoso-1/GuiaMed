@@ -1,0 +1,48 @@
+{"input": "Alergonix\nfeniradina\nlote  ficticio", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "receita: Alergonix comprimido 5 mg t0rnar conforme orientacao", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "MEDIAMENTO\nANSIOPLANT PRINCIPIO ATIV0 EXTRATO SEC0 DE PASSFLORA BRAS11IENSS", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "REC3ITA: ANSIOPLANT CÁPSULA 250 MG TOMAR CONFORME ORIENTACA0", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "ASMAPLUS\nBRONFEROL\nLOTE F1CTICIO", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "receita: Asrnaplus aerossl in4latório 100 mc/dose tomar conform3 orientacao", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "CAIXA DE CARIOVAST - NERVASTATINA CÁICA - USO ORAL", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "CARDIOVAST COMPRRNID0 20 MG VALIDADE 12/28", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "RECEITA: CEFATRAX COMPRIMIDO 50 MG TOMAR CONFORME ORIENTACAO", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "MEDIC4ENTO\nCEFATRAX PRINCIPIO ATIV0 CETRAXATO DE POTÁSSIO", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "receita: Ciclofem comprimido 0,03 mg + 0,15 mg tomar conforme orientac4o", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "rceita: Ciclofem comprimido 0,03 mg + 0,15 mg tomar c0nforme orientacao", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "receita: Cortiderrn crerne dermatológico tomar conforme orientaao", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "MEDICAMENTO CORTIDERM PRINCIPIO ATIVO CORISONIL 1%", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "MEDICAMENTO  DERMAOPOL PRINCIPIO ATIVO SULFATO DE POLIDERMINA + BACITR4CINA ZÍN1CA", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "DERMATOPOL PORNADA DERMATOLÓGICA VALIDADE 12/28", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "C4IXA DE DORFANOL - P4RAXETAMOL - USO 0RAL", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "RCEITA:\nDORFANOL COMPIMIDO 750 MG TOMAR CONFORE ORIENTACAO", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "medicamento Frrnato princ1pio ativo ferr1polimltosado", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "caixa\nd3 Ferronato - ferripoimaltosado - uso oral", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "Fungitrat\nfungiderm 1%\nlote ficticio", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "CAIXA DE FUNGITRAT - FNGID3RM 1% - USO ORAL", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "RECEIT4: GL1FORIN COMPRIRNIDO 500 RNG T0MAR CONFORME ORI3NTACAO", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "Glif0in comprim1do 500 g validade 12/28", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "M3DICAMENTO INSULFORT PRINCIPIO ATIVO INSULINA ISOLENTA HUMANA RECOMBINANTE", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "INSULFORT SUSPENSÃ0 INJETÁVEL 100 I/ML VALIDADE 12/28", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "M1granol\nbetanoll\nlote ficticio", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "medicamento\nMigranol prinipio t1vo btanolol", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "Ofalil\nlacrimetil 0,5%\nlote ficticio", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "MDICAMENTO OFTLMIL PRINCIPIO ATIV0 LACRMTIL 0,5%", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "caixa de Pressormin - l0saprilato d3 sódio - uso oral", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "receita: Pressormin comprimido 10 mg tornar conforme orientacao", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "MEDICARNENTO PROB1ONEX PRINCIPI ATIVO BLEND PROBIÓTICO (LACT0BACI1LUS BR-1 + BIFIDOBACT3RIM BR-2)", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "medicmeto  Pobionx principio ativ0 blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "MEDICAMENTO RUMAXIL PRINCIPIO ATIVO REUMEXATO", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "rceita:  Rumaxil coprim1do 2,5 rng tomar conorme orientacao", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "CAXA DE SMNIVALE - EXTATO S3CO DE VALERI4NA MONNA - USO ORA", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "Somniale\nextr4to\nseco de Valeriana montana\n1ote f1cticio", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "T1reonorm\nlevoironato de sódio\nl0te f1ctic1o", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "Tireonorm\nlevotironato de sódio\nlote ficticio", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "Tsseclear\nmucoclear\nlote ficticio", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "Tosseclear xarope 40 mg/mL validade 12/28", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "Venoca1m\nvenoflav\nlote ficticio", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "receta:\nV3nocalm 0mrimdo 450 mg tomar conf0rm3 orientacao", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "Ventacid\nhidróxido  de magnidril + simeticna\nlote ficticio", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "caixa\nde V3ntacid - hidróxid0 de agnidril + sirn3tic0na - us0 oral", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "caixa de Vitabex - complexo B (B1, B6, B12) - us oral", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "Vitab3x\ncápsula validad3 12/28", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}

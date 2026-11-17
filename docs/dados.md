@@ -14,6 +14,11 @@ Dois conjuntos, ambos sintéticos:
    está em [`data/ft/ocr_finetuning_local.jsonl`](../data/ft/ocr_finetuning_local.jsonl)
    e é reproduzível por `scripts/run_ai_evidence.py`.
 
+Para o fine-tuning do LLM, `data/ft/llm_train.jsonl` contém 252 entradas e
+`data/ft/llm_test.jsonl` contém 48 entradas, duas por classe. A separação usa
+semente 20261117 e verifica a ausência de textos idênticos entre conjuntos.
+Ambos usam a mesma família de templates sintéticos, uma limitação da avaliação.
+
 ## Inventário das bulas
 
 | # | Medicamento (fictício) | Classe terapêutica | Tarja |
