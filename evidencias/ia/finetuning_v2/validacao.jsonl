@@ -1,0 +1,24 @@
+{"input": "Amostra da farmácia 628\nProduto PRESSORM IN\nForma comprimido 10 mg", "expected": "Pressormin"}
+{"input": "Amostra da farmácia 321\nProduto Glifoirn\nForma comprimido 500 mg", "expected": "Gliforin"}
+{"input": "Amostra da farmácia 809\nProduto ORFANOL\nForma comprimido 750 mg", "expected": "Dorfanol"}
+{"input": "Amostra da farmácia 156\nProduto CEFATR4X\nForma comprimido 50 mg", "expected": "Cefatrax"}
+{"input": "Amostra da farmácia 781\nProduto SORNNIVAIE\nForma cápsula 200 mg", "expected": "Somnivale"}
+{"input": "Amostra da farmácia 720\nProduto VEN7AC1D\nForma suspensão oral", "expected": "Ventacid"}
+{"input": "Amostra da farmácia 406\nProduto Alerg onix\nForma comprimido 5 mg", "expected": "Alergonix"}
+{"input": "Amostra da farmácia 321\nProduto Asmaplsu\nForma aerossol inalatório 100 mcg/dose", "expected": "Asmaplus"}
+{"input": "Amostra da farmácia 331\nProduto ARDIOVAST\nForma comprimido 20 mg", "expected": "Cardiovast"}
+{"input": "Amostra da farmácia 270\nProduto TIRE0NORM\nForma comprimido 50 mcg", "expected": "Tireonorm"}
+{"input": "Amostra da farmácia 921\nProduto FERRON4T0\nForma comprimido mastigável 100 mg", "expected": "Ferronato"}
+{"input": "Amostra da farmácia 421\nProduto V17abex\nForma cápsula", "expected": "Vitabex"}
+{"input": "Amostra da farmácia 972\nProduto CIC LOFEM\nForma comprimido 0,03 mg + 0,15 mg", "expected": "Ciclofem"}
+{"input": "Amostra da farmácia 909\nProduto ANSIPOLANT\nForma cápsula 250 mg", "expected": "Ansioplant"}
+{"input": "Amostra da farmácia 328\nProduto Reumaxi\nForma comprimido 2,5 mg", "expected": "Reumaxil"}
+{"input": "Amostra da farmácia 845\nProduto DERMAT0POL\nForma pomada dermatológica", "expected": "Dermatopol"}
+{"input": "Amostra da farmácia 327\nProduto Oftalrn1l\nForma colírio", "expected": "Oftalmil"}
+{"input": "Amostra da farmácia 199\nProduto PR0BI0NEX\nForma sachê liofilizado", "expected": "Probionex"}
+{"input": "Amostra da farmácia 748\nProduto FUNGI TRAT\nForma creme dermatológico", "expected": "Fungitrat"}
+{"input": "Amostra da farmácia 954\nProduto TOSSECELAR\nForma xarope 40 mg/mL", "expected": "Tosseclear"}
+{"input": "Amostra da farmácia 350\nProduto VENOALM\nForma comprimido 450 mg", "expected": "Venocalm"}
+{"input": "Amostra da farmácia 790\nProduto Insulfor7\nForma suspensão injetável 100 UI/mL", "expected": "Insulfort"}
+{"input": "Amostra da farmácia 329\nProduto Cortid3rrn\nForma creme dermatológico", "expected": "Cortiderm"}
+{"input": "Amostra da farmácia 592\nProduto MIGRAN0I\nForma comprimido 40 mg", "expected": "Migranol"}

@@ -1,0 +1,35 @@
+{
+  "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+  "revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+  "seed": 20261118,
+  "train_examples": 488,
+  "validation_examples": 24,
+  "removed_train_rows_overlapping_old_test_after_normalization": 4,
+  "train_seconds": 393.10434250000003,
+  "batch_size": 8,
+  "learning_rate": 0.0003,
+  "tested_epochs": 3,
+  "selected_epoch": 1,
+  "updates": 183,
+  "trainable_parameters": 460800,
+  "new_test": {
+    "examples": 48,
+    "v1_correct": 2,
+    "v2_correct": 23,
+    "corrected": 21,
+    "regressed": 0,
+    "gain_pp": 43.75,
+    "paired_exact_p": 9.5367431640625e-07
+  },
+  "old_test": {
+    "examples": 48,
+    "v1_correct": 30,
+    "v2_correct": 37,
+    "corrected": 8,
+    "regressed": 1,
+    "gain_pp": 14.583333333333337,
+    "paired_exact_p": 0.0390625
+  },
+  "previous_adapter_sha256": "7bbea2e0cbd7fbb1e80e1c44b253ec024803b940256eb23d5e50ac6357875c09",
+  "adapter_sha256": "8289b6de69f2e44c3686ae8dfdfe6eecb7a9599427dc40209935deea58cac6d8"
+}

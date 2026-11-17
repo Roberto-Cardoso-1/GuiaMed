@@ -7,6 +7,7 @@
 | Cinco casos de IA | `ia/casos_teste.md` |
 | Ajuste supervisionado | `ia/experimento_ajuste_local.md` e `ia/metricas.json` |
 | Fine-tuning de LLM pré-treinado | [Treino LoRA e comparação com o original](ia/finetuning/README.md) |
+| Segunda rodada de fine-tuning | [Comparação dos adaptadores em layouts inéditos](ia/finetuning_v2/README.md) |
 | Custo e latência | `ia/metricas.json` |
 | Papéis, RLS e mascaramento | `seguranca/permissoes_integracao.txt` |
 | Volume | `seguranca/volume.txt` |

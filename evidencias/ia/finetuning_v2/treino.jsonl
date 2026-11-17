@@ -1,0 +1,488 @@
+{"input": "ALERGONIX\nCOMPRIRNIDO 5 MG VALIDADE 12/28", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "CAIXA DE AL3RGONIX - FENIRADINA - USO ORAL", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "ALERGONIX COMPRIMIDO 5 RNG VALIDADE 12/28", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "AERGONIX  COMPRIMIDO 5 MG VALIDADE 12/28", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "Alergonix\nfenirad1na\note\nficticio", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "MEDIC4MENTO ALERGONIX PRINCIPIO ATIVO FENIRADINA", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "receita: Alergonix comprimido 5 mg t0mar conform3 orientacao", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "MEDICAMENTO ALERGONIX PRINCIPIO ATIVO FENIRADINA", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "caixa\nde Alergonix - feniradina - uso oral", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "medicamento Alergonix principio ativo f3nirdina", "expected": "Alergonix", "principio_ativo": "feniradina"}
+{"input": "r3ceita: Ansiopl4nt cápsula 250 rng tornar conforme oientacao", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "Ansioplant  cápsu1a 250 mg va1idade 12/28", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "ANSIOPLANT CÁPSULA 250 MG VALIDADE 12/28", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "c4ixa e Ansioplnt - extrato seco de Passiflora brasiliensis - uso oral", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "caixa\nde Ansiopla - exrato sec0 de Passiflora brasiliensis - uo oral", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "mdicamento Ansiop1ant principio ativo extrato seco de Passif1ra brasiliesis", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "Ansioplant\nextrato\nsec de Passiflora brasiliensis\note ficticio", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "ANSIOPLANT\n3XTRATO SECO DE PASS1FLOA BRASILIENSIS\nLOTE FICT1CIO", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "CAIA DE ANSIOPLANT - 3XTRATO SEC0 DE PASSIFLORA BRASI1IENSIS - USO ORAL", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "r3ceit:  Ansioplant cápsula 250 mg tomar conf0rme orientacao", "expected": "Ansioplant", "principio_ativo": "extrato seco de Passiflora brasiliensis"}
+{"input": "ASMAPLUS\nAEROSSOL INALATÓR1O 100 MCG/DOSE VALIDADE 12/28", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "R3CEITA:  ASM4PLUS AER0SSOL INALATÓRIO 100 RNCG/DOSE TOMAR CONFORME ORIENT4CAO", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "MEDICAMENTO  ASMAPLUS PRINCIPIO ATIVO BRONFEROL", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "MEDICARNENTO ASMAPLUS PINCIPIO TIVO BRONFEROL", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "MEDICAMENTO ASMAPLUS PRINCIPIO ATIVO RONFERO1", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "Asmaplus\naer0ssol inalatório 100 mcg/dose validade 12/28", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "caixa d3 Asmaplus - bronferol - uso oral", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "ASMAP1US\nBRONF3ROL\nLOTE FICTICIO", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "RECEIT: ASMAPLUS AEROSO 1N4L4TRIO 100 MCG/D0SE TORNAR CONFORME ORIENTACA0", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "CAIXA  DE 4SMAPLUS - BRONFEROL - USO ORAL", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "Asmaplus  aerssol inalatório 100 mcg/d0se validade 12/28", "expected": "Asmaplus", "principio_ativo": "bronferol"}
+{"input": "receita: Cardiovast compr1mio 20 g t0rnar conforme 0rientac4o", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "CAIXA DE CARD1OVAST - N3RVAST4TINA CÁ1CICA - USO OR4L", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "Car1ov4st\nnervastat1n4 cálc1c4\nlote ficticio", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "MEDICAMENTO ARDIOAST PRINC1PIO 4TIVO NERVASTAT1NA CÁLCICA", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "CAIXA  DE CARDIOVAST - N3RVASTATINA CÁLCIC4 - US RAL", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "MEDICAMENT0 CARDIOVAS PRINC1PI0 ATIVO NERVST4TINA CÁLCICA", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "ardi0v4st\nnerastatina cálcica\nlote ficticio", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "R3CEITA: CARDI0VAST COMPRIMID0 20 MG TOMAR CNFORRNE 0RIENTACAO", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "M3DICMENT CARDIOVAST PRINCIPIO 4TIVO NEVASTATINA CÁLCICA", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "RECEITA: CRDIOVAST C0RNPRIMIDO 20 MG TOMAR CONFORNE ORINTACAO", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "Cardiovast\ncprimido 20 m valiade 12/28", "expected": "Cardiovast", "principio_ativo": "nervastatina cálcica"}
+{"input": "CEFATRAX\nCORNPRIMID0 50 MG VALIDADE 12/28", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "CAIXA  DE CEFATRAX - ETRAXATO DE POTÁSSIO - USO ORAL", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "MEDICAMENTO C3FATRAX RINCPIO ATIVO CETRAX4TO DE POTÁSSIO", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "Cefatrax\ncetraxato de potássio\nlote ficticio", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "caixa de Cefatrax - cetraxato de potássio - uso oral", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "RECEITA:  CEFATRAX COMPRIMID0 50 MG T0MAR CONFORME ORIENTACAO", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "C4IXA DE CEFATRAX - CETRAXATO DE POTÁSSIO - USO ORAL", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "Cefatrax\ncetraxato de potássio\nlote ficticio", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "MEDICAMENTO CEFATRAX PRINCIPIO ATIVO CTRAXATO DE POTÁSSIO", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "Cefatrax comprimido 50 rng validade 12/28", "expected": "Cefatrax", "principio_ativo": "cetraxato de potássio"}
+{"input": "CICLOFEM\nETINILOX + LEVONOX\nLOTE FICTICIO", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "MEDICAMENTO CICLOFEM PRINCIP1O ATVO ETINILOX + LEVONOX", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "Cicl0fem\netinilox  + levonox\nlote ficticio", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "caixa de Ciclofem - etinil0x + levonox - uso oral", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "receit4: Ciclofem comprimido 0,03 mg + 0,15 mg tomar conforme orientacao", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "medicamento\nCiclofem pr1ncipio ativo etinilox + levonox", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "medicamento\nCiclofem principio ativo etinilox + levonox", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "CICLOFEM  OMPRIMIDO 0,03 MG + 0,15 MG VALIDADE 12/28", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "CAIXA\nDE CICLOFEM - ETINILX + LEVONOX - USO OR4L", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "Ciclofem  comprimido 0,03 mg + 0,15 mg vaidade 12/28", "expected": "Ciclofem", "principio_ativo": "etinilox + levonox"}
+{"input": "CAIXA DE CORTIDERM - CORTISONIL 1% - USO ORAL", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "Cortiderm crem3 dermatológic0 validade 12/28", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "ORTIDERM\nCORTISON1L\n1%\nLOTE FICTICIO", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "medicamento C0rtiderm principio ativo cortisonil 1%", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "Cortiderm creme dermatológico validad3 12/28", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "MED1CAMENTO CORTID3RM PRINCIPI0 ATIVO CORTIS0NIL 1%", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "RECEITA: CORTIDERM CREME DERMATOLÓGICO TOMAR C0NFORME ORIENTACA", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "ca1xa de Cortid3rm - cortisonil 1% - uso oral", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "Cortiderm\ncortisonil 1%\n1ot3 fictic1o", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "RECEITA: CORTIDERM CREME DERMATOLÓGICO TOMAR CONFORM3 ORIETACAO", "expected": "Cortiderm", "principio_ativo": "cortisonil 1%"}
+{"input": "CAIXA\nDE DERMATOP0L - SULFTO DE POLIDERMINA + BACITRACINA ZÍNICA - USO ORAL", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "DERMATOPOL\nSULFATO DE POLID3RMINA + BACITRACINA ZÍNICA\nLOTE FICTIC1O", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "D3rmaopol\nsulfato\nde polidermina + bacitracina zínica\nlote ficticio", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "Dermaopo1\nsulfato\nde polidermina + bacitracina zínica\nlote ficticio", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "RECEITA:\nDERM4TOPOL POMADA DERMATOLÓGICA TOMAR CONFORME ORIENTACAO", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "MEDICAMENTO  DERMATOPOL PRINCIPIO ATIVO SULFATO DE POLIDERMINA + BACITRACINA ZÍNICA", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "RECEITA:\nDERMATOPOL PORNADA DERMATOLÓGICA TOMAR CONFORME ORIENTACAO", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "DERMATOPOL\nPOMADA DERMATOLÓGICA VAIDADE 12/28", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "caixa de Dermatopol - sulfato de polidermina + bacitracina zínica - uso oral", "expected": "Dermatopol", "principio_ativo": "sulfato de polidermina + bacitracina zínica"}
+{"input": "Dorfan0l\nparaxtamol\nlote ficticio", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "DORFANOL\nCOMPRIMIDO 750 MG V4LIDADE 12/28", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "receit:\nDorfanol comprimido 750 mg tornar c0nforme orienacao", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "DORFANOL C0MPRIMIDO 750 MG VALID4DE 12/28", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "medicarnento Dorfanol principi0 ativo p4r4xtam", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "receita: Dorfanol comprirnio 750 mg tomar conforme orientac4o", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "MEDICAM3NTO DORFANOL PRINCIPIO ATIV0 PARAX3TARNO1", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "medicamento  Dorfan0l princpio aivo araxetamol", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "Dorfanol comprimido 750 mg vaidade 12/28", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "caixa\nde Dorfanol - paraxetamo - uso oral", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "Dorfano1\nparaxetamol\nlote ficticio", "expected": "Dorfanol", "principio_ativo": "paraxetamol"}
+{"input": "RECEITA: FERRONATO COMPRIMIDO MASTIGÁVEL 100 MG TOMAR CONFORM3 ORIENTACAO", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "Ferronato comprimido m4stigável 100 mg validade 12/28", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "Ferronato\nferipolimaltosado\nl0te\nfict1cio", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "CAIXA D FERRONATO - FERRIOLIMALTOSADO - USO ORAL", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "F3rronato\nferripolimaltosado\nl0t3\nficticio", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "caixa de Ferronato - ferripolirnaltosado - uso oral", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "Ferronat0\nferripolimatosado\nlote f1cticio", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "Ferronato  omprimido m4stgável 100 mg validade 12/28", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "RECEITA: F3RRONAT COMPRIMIDO MASTIGÁVEL 100 MG TOMAR CONFORME ORINTACAO", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "medicam3nto Ferronato principio ativo ferripolimaltosado", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "Ferronato  comprimido mastigáve1 100 mg valid4de 12/28", "expected": "Ferronato", "principio_ativo": "ferripolimaltosado"}
+{"input": "CAIXA\nDE FUNGITRAT - FUNGIDERM 1% - USO ORA1", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "CAIXA DE FUNGITRAT - FUNGIDERM 1% - USO ORAL", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "3CEITA:\nFUNGITRAT CRM3 DERMATOLÓGICO TOMAR CONFORME ORIENTACAO", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "receita: Fungitrat creme d3rmatológico tomar conforme orentacao", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "MEICAMENTO FUNGITRAT PRINCIPIO ATIVO FUNGIDERM 1%", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "FUNGITRAT  CREME DERMATOLÓGICO VALIDADE 12/28", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "Fungitrat\ncreme dermatológico vlidade 12/28", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "medicamento\nFungitrat principio ativo fungiderm 1%", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "RECEITA:  FUNGITRAT CREME DERMATO1ÓGICO TOMAR CONFORME ORIENTACAO", "expected": "Fungitrat", "principio_ativo": "fungiderm 1%"}
+{"input": "medicamento  Gliforin pincipio ativo g1ib3nzid", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "ME1CAMENTO  GLIFORIN PRINCIPIO AT1VO GLIBENZ1DA", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "GLIFORIN\nCOMPRIMIO 500 MG VALID4D3 12/28", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "GLIFORIN  COMPRIMIDO 500 MG V4LIDAD3 12/28", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "GLIFORIN\n1IBNZIDA\nL0TE FICTICIO", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "caixa de G11forin - glibenzida - uso oral", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "medicam3nto\nGliforin principi0 ativo glibenzida", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "receita: Gliforin comprimido 500 mg tornar conforme orientacao", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "ca1xa de Gliforin - glibenz1da - uso oral", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "GLIFORIN\nGLIBEZ1DA\nLOTE FICTICIO", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "GLIFRIN\nGLBENZID4\nLOT FICTICIO", "expected": "Gliforin", "principio_ativo": "glibenzida"}
+{"input": "c4ixa\nde Insulfort - insulina isolenta humana recomb1nante - uso oral", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "receit4:  Insulfort suspensão injetável 100 UI/mL t0mar conforme orientacao", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "caixa d3 Insulfort - isulin isolenta humana recombin4nt3 - uso oral", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "Insulfot suspensão injetável 100 UI/mL validade 12/28", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "INSULFORT SUSPENSÃO INJETÁVEL 100 UI/ML VALIDADE 12/28", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "MEDICAMENTO INSULFORT PRINCIPIO ATIVO INSULINA ISOLENTA HUMANA RECOMBINANTE", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "INSULFORT\nINSULINA ISOLENTA HUMANA RECOMBINANTE\nLOTE FICTICIO", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "receita: Insulfort suspensão injetável 100 UI/mL t0mar conforme 0rientac4o", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "1NULFORT\nINSULINA SOLENTA HUMANA RECOMBINANTE\nLOTE FICTICIO", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "med1cmento Insulfort principio ativo insulina isolenta humana recombiante", "expected": "Insulfort", "principio_ativo": "insulina isolenta humana recombinante"}
+{"input": "MIGRAN01  C0MPRIMIDO 40 MG VALIDAD3 12/28", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "CAIXA D3 M1GRANOL - BETANOLOL - USO AL", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "rec3ita: Migranol cornprimid 40 mg tomar conforme rientacao", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "ca1xa de Migrano1 - betanolo - us oral", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "MIGR4OL\nCOMPRIMIDO 40 MG VALIDADE 12/28", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "Migranol\nbetanolol\nlot3\nficticio", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "RECEITA:  M1GRANOL C0MPRIM1DO 40 MG TOMAR CONFORM3 ORIENTACAO", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "M3DIC4MENTO MIGRANOL PRINCIPIO ATIVO BETANOLO1", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "CAIXA  DE MIGRANOL - BETANOLOL - USO ORA1", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "receta: Migranol cornpr1rn1do 40 m t0mar conforme or1entacao", "expected": "Migranol", "principio_ativo": "betanolol"}
+{"input": "caixa\nde Oftalmil - lacrirnetil 0,5% - uso 0ral", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "Oftalmil  colírio validade 12/28", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "CAIXA D3 OFT4LMIL - LACRIMETIL 0,5% - USO OAL", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "OFTALMIL COLÍRIO VALIDADE 12/28", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "Oftalmi1\ncolírio validade 12/28", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "RECITA:  OFTALMIL COLÍRIO TOMAR CONFORME ORIENTACAO", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "Oftalmil\nlacr1metil 0,5%\n1ote ficticio", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "RECEITA: OFTAMIL COLÍRIO TOMAR C0NFORME ORI3NTACAO", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "medicamento  Oft4lmil principio ativo lacrimetil 0,5%", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "medicamento\nOftalmil principio ativo lacrimetil 0,5%", "expected": "Oftalmil", "principio_ativo": "lacrimetil 0,5%"}
+{"input": "CA1XA DE PRESSORMIN - LOSAPRILATO DE SÓDI0 - US0 ORAL", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "caixa  de Pressormin - losaprilato d sód1o - uso oral", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "RECEITA:  PR3SSRMIN OMPRIMIDO 10 MG TOMAR C0NFORME ORIENTACAO", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "PRESSORMIN  COMPRIMIDO 10 MG VALIDADE 12/28", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "PRESSORMIN\nLOSAPRILATO DE SÓDIO\nLOTE FICTICIO", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "PRESSORMIN\nLOSAPR1LATO DE SÓDIO\nLOTE FICTICIO", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "Pressormin comprimido 10 mg validade 12/28", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "RESSORMIN\nLOSAPRILATO DE SÓDIO\nLOTE FICTICIO", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "MED1CAMENTO  PRESSORMIN PRINCIPIO 4TIV LOSAPRILATO DE SÓDIO", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "MEICAMENTO PRESSORMIN PR1NCIPIO ATIVO LSAPRIL4TO DE SÓDIO", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "PRESS0RRNIN COMPRIMID 10 MG VALIDDE 12/28", "expected": "Pressormin", "principio_ativo": "losaprilato de sódio"}
+{"input": "RECE1TA: PROBIONEX SACHÊ L1OFILIZADO TOMAR CONFORRN 0RI3NTACAO", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "R3CEITA: PRBION3X SACHÊ L1OFILZADO TOM4R CONF0RRNE ORIENT4CAO", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "R3C3ITA: PROBIONEX SACHÊ LIOF1LZADO OMAR C0NFRME 0RIENTACAO", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "medicamento Probinex prinipio at1v0 b3nd probiótico (Lac0bacillu BR-1 + B1fidobacteriurn BR-2)", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "CAIXA DE PROBI0NEX - BLEND PROBIÓICO (LACTOB4CILLUS BR-1 + B1FIDOBACTERIURN BR-2) - USO ORAL", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "PROBIONEX\nBLEND PROBIÓT1CO (LATOBCILLUS BR-1 + B1FIDOBACTER1UM BR-2)\nLOTE FICTICIO", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "PROBINEX S4CHÊ LIOFILZAD0 VAL1DDE 12/28", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "PROBI0NEX\nBLEND\nPOBIÓTICO (LACTOBACI1LUS BR-1 + BIIDOBACTRIM BR-2)\nLOTE FICTIC1O", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "C4IXA DE POBINEX - BLEND PROBIÓTICO (L4CTOBC1LLUS B-1 + BIFIDOBCTER1UM R-2) - US0 ORA1", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "Probionex\nsachê l1ofilizado validade 12/28", "expected": "Probionex", "principio_ativo": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)"}
+{"input": "REUMAXIL\nREUMEXATO\nLOT3\nFICTICIO", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "CAIXA DE REUMAXIL - REURNEXAT0 - USO ORAL", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "REUMAXIL\nCOMPRIMI0 2,5 MG VALIDADE 12/28", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "RECEITA: REU4XIL COMPRIIDO 2,5 MG TORNAR CONFORME ORIENTACAO", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "CAIXA  DE REUMAXI - REUM3XATO - USO ORAL", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "REUMAX1L\nREUMEXATO\nLOTE FICTICIO", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "MEDICAMENTO\nREUMAXI1 PRINCIPIO AT1VO REUMEXAT", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "REUMXIL\nR3UMEX4TO\nLOT3\nFICTICO", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "CAIXA DE REUMAXIL - REURN3X40 - US ORAL", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "Reum4xil comprimido 2,5 mg vaidade 12/28", "expected": "Reumaxil", "principio_ativo": "reumexato"}
+{"input": "RECEITA: SOMNIVALE CÁPSULA 200 MG TORNAR CONFORME ORIENTCAO", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "edicamento Somnvale principi0 ativo 3xtrato seco de Valeri4n montana", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "RECEITA: SOMNIVALE CÁPSULA 200 M TOMAR CONFORRNE ORINTACAO", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "Somnivale\nextrato seco de Valeriana ontana\nloe ficticio", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "SOMNIVALE CÁPSUL4 200 MG VALIDADE 12/28", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "receita: Somnivale cápsula 200 mg tomar conforrne orietacao", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "CAIX4 DE S0MNIVALE - EXTRATO SECO DE VALERAN4 MONTANA - USO ORAL", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "Somnivale\nextrato\nseco de Valeriana mont4na\nlote ficticio", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "CAXA\nDE SOMNIVALE - ETRAT SECO E VALERIAA MONTAA - USO ORAL", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "SOMNIVALE\nCÁPSULA 200 MG A1ID4DE 12/28", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "medicament  Somnivale principio ativo extrato seco de Valeriana rnontana", "expected": "Somnivale", "principio_ativo": "extrato seco de Valeriana montana"}
+{"input": "CIXA\nDE IREONORM - LEVOTIRONATO D SÓDIO - USO ORAL", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "Tireonorm comprirnido 50 mcg v4lidade 12/28", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "TIRE0NORM\nLEVOTIRONATO\nDE SÓDIO\nLOTE FICTICIO", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "RECEITA: TIREONORM COMPRIMIDO 50 MCG TOMAR CONFORME ORIENTACA0", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "RECEITA:\nTIR3ONORM CORNPRIRNIDO 50 MCG T0MAR CONFORME ORIENTACAO", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "MEDICAMENTO TIREONORM PRINCIPIO ATIVO LEVOTIRONATO DE SÓDIO", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "TIREONRM\nCOMPRIMID 50 MCG VALIDADE 12/28", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "RECEITA: TIREONORM COMPRIMIDO 50 MCG TOMAR CONFOR3 ORIENTACAO", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "CAIXA  DE TIREONORM - LEVOTIRONATO DE SÓDIO - USO ORAL", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "MEDICAMENTO  TIREONORM PRINCIPIO ATIVO LEVOTIRONATO DE SÓDIO", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "CAIXA  DE TIREONORM - LEVOTIRONATO DE SÓDIO - USO ORAL", "expected": "Tireonorm", "principio_ativo": "levotironato de sódio"}
+{"input": "CAIXA DE TOSSECLEAR - MUCOCLEAR - USO ORAL", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "c4ixa de Tosseclear - mucocl3ar - uso oral", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "recita: Tosseclear xarope 40 mg/mL tornar conf0rme orientaca0", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "MEDIC4MENTO TOSSCLEAR PNCIPIO ATIVO MUCOC1EAR", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "caixa\nd Tosseclear - mucoclear - uso ora", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "Tossecle4r\nmucoclear\nlote\nfictici0", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "RECEITA:  TOSSECL3AR XAROPE 40 MG/ML TOMAR CONFORM3 ORIENTACAO", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "MEDICAMENTO TOSSCLEAR RINCIPIO ATIVO MUCOCLEAR", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "TSSECLE4R\nMUCOCLEA\nLTE  FICTICIO", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "TOSSECLEAR XAROPE 40 RNG/ML VALIDAD3 12/28", "expected": "Tosseclear", "principio_ativo": "mucoclear"}
+{"input": "VENOCALM COMPRIMIDO 450 MG V4LIDE 12/28", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "meic4men0 Venocalm princ1pio ativo v3nofl4v", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "caixa de V3noc4lm - venoflav - uso oral", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "Ven0calm\nvenofl4v\nlote  f1cticio", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "receita: Vn0calm coprimido 450 mg tomar c0nforrne rientacao", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "Venocal\ncornprimido 450 mg validade 12/28", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "Venocalm comprirnido 450 mg validade 12/28", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "caixa\nde V3nocalm - venoflav - uso ora1", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "Vencalm\nve0flav\nlote\nfict1cio", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "MEDICAMENT0 V3NCALM PRINCIP1O TIVO VNOFLAV", "expected": "Venocalm", "principio_ativo": "venoflav"}
+{"input": "aixa de Ventacid - hdróxid de magnidril + simeticna - us0 0ral", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "RECEITA: VENTACID SUSPENSÃO ORAL T0RNAR C0NFORME ORIENTACAO", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "Ventacid\nh1dróxido de rnagnidril + simetic0na\nlote fitici", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "VENTACID  SUSPENSÃO OR4L VAL1D4DE 12/28", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "receita: Ventacid supensão oral tomar conforne oretaca0", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "Ventacid\nhidróx1do de magnidril + simeticona\n1ote ficticio", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "Ventacid\nsuspesão ora1 v4lidade 12/28", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "Ventac1d susenão 0ral vaidade 12/28", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "MEDICAMENTO  VENTACID PRICIP1O 4TIVO HIDRÓXIDO DE MAGNDRIL + SIMETICONA", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "MEDICARNENTO VENTACID PRINCPIO AT1O HIDRÓXIDO DE MAGNIDRIL + SIMETICONA", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "CA1XA\nDE VENTACID - HIDRÓIDO DE MAGNDR1 + SIMETCONA - SO ORAL", "expected": "Ventacid", "principio_ativo": "hidróxido de magnidril + simeticona"}
+{"input": "medicamento  Vitabex principio ativo cornpl3o B (B1, B6, B12)", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "V1TABEX\nCOMPLEXO  B (B1, B6, B12)\nLOTE F1CTICIO", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "medicamento Vitabex pr1ncipio tivo complexo B (B1, B6, B12)", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "md1carneto Viab3x principio at1vo compl3xo B (B1, B6, B12)", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "receita: Vitabex cápsula toma conf0rme orientacao", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "VITABEX\nCOMPLEXO B (B1, B6, B12)\nLOTE FICTICIO", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "VITAB3X\nCOMPLEO B (B1, B6, B12)\nL0TE F1CTICIO", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "reeita:\nVitabex cápsula tomar conf0rme orienacao", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "Vitaex cápsula validade 12/28", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "Vitabex cápsula validade 12/28", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "CAIXA\nD VITABEX - CORNPLEXO B (B1, B6, B12) - USO ORAL", "expected": "Vitabex", "principio_ativo": "complexo B (B1, B6, B12)"}
+{"input": "Nome comercial Pressor min | composição losaprilato de sódio", "expected": "Pressormin"}
+{"input": "PERSSORMIN\nApresentação: comprimido 10 mg\nLote simulado 118", "expected": "Pressormin"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 606 - PRESORMIN - losaprilato de sódio", "expected": "Pressormin"}
+{"input": "Ficha de treino\nlosaprilato de sódio\nMarca: PRESSORM1N", "expected": "Pressormin"}
+{"input": "Catálogo de amostras\nPR35SORMIN | código 656", "expected": "Pressormin"}
+{"input": "Nome comercial PR3SS0RMIN | composição losaprilato de sódio", "expected": "Pressormin"}
+{"input": "Pres sormin\nApresentação: comprimido 10 mg\nLote simulado 683", "expected": "Pressormin"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 247 - PRESSORMNI - losaprilato de sódio", "expected": "Pressormin"}
+{"input": "Ficha de treino\nlosaprilato de sódio\nMarca: Presormin", "expected": "Pressormin"}
+{"input": "Catálogo de amostras\nPRESS0RMIN | código 152", "expected": "Pressormin"}
+{"input": "Nome comercial GLIFO RIN | composição glibenzida", "expected": "Gliforin"}
+{"input": "GLIFROIN\nApresentação: comprimido 500 mg\nLote simulado 736", "expected": "Gliforin"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 983 - Glforin - glibenzida", "expected": "Gliforin"}
+{"input": "Ficha de treino\nglibenzida\nMarca: Glifor1n", "expected": "Gliforin"}
+{"input": "Catálogo de amostras\nG1iforin | código 402", "expected": "Gliforin"}
+{"input": "Nome comercial Glif0r1n | composição glibenzida", "expected": "Gliforin"}
+{"input": "Glifo rin\nApresentação: comprimido 500 mg\nLote simulado 259", "expected": "Gliforin"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 795 - Gliofrin - glibenzida", "expected": "Gliforin"}
+{"input": "Ficha de treino\nglibenzida\nMarca: Glifoin", "expected": "Gliforin"}
+{"input": "Catálogo de amostras\nGIiforin | código 925", "expected": "Gliforin"}
+{"input": "Nome comercial DORFAN OL | composição paraxetamol", "expected": "Dorfanol"}
+{"input": "Dorafnol\nApresentação: comprimido 750 mg\nLote simulado 741", "expected": "Dorfanol"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 167 - Dofanol - paraxetamol", "expected": "Dorfanol"}
+{"input": "Ficha de treino\nparaxetamol\nMarca: DORF4NOL", "expected": "Dorfanol"}
+{"input": "Catálogo de amostras\nD0rfan0l | código 503", "expected": "Dorfanol"}
+{"input": "Nome comercial D0RFANOI | composição paraxetamol", "expected": "Dorfanol"}
+{"input": "DORF ANOL\nApresentação: comprimido 750 mg\nLote simulado 207", "expected": "Dorfanol"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 656 - DORAFNOL - paraxetamol", "expected": "Dorfanol"}
+{"input": "Ficha de treino\nparaxetamol\nMarca: DORFANL", "expected": "Dorfanol"}
+{"input": "Catálogo de amostras\nDORF4NOL | código 950", "expected": "Dorfanol"}
+{"input": "Nome comercial CEFAT RAX | composição cetraxato de potássio", "expected": "Cefatrax"}
+{"input": "CEFARTAX\nApresentação: comprimido 50 mg\nLote simulado 591", "expected": "Cefatrax"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 248 - efatrax - cetraxato de potássio", "expected": "Cefatrax"}
+{"input": "Ficha de treino\ncetraxato de potássio\nMarca: CEF4TRAX", "expected": "Cefatrax"}
+{"input": "Catálogo de amostras\nCefa7r4x | código 409", "expected": "Cefatrax"}
+{"input": "Nome comercial C3FA7RAX | composição cetraxato de potássio", "expected": "Cefatrax"}
+{"input": "Cefat rax\nApresentação: comprimido 50 mg\nLote simulado 126", "expected": "Cefatrax"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 693 - CEFATRXA - cetraxato de potássio", "expected": "Cefatrax"}
+{"input": "Ficha de treino\ncetraxato de potássio\nMarca: Cefatra", "expected": "Cefatrax"}
+{"input": "Catálogo de amostras\nCEFA7RAX | código 243", "expected": "Cefatrax"}
+{"input": "Nome comercial SOM NIVALE | composição extrato seco de Valeriana montana", "expected": "Somnivale"}
+{"input": "Somnivlae\nApresentação: cápsula 200 mg\nLote simulado 755", "expected": "Somnivale"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 250 - SOMNIVAE - extrato seco de Valeriana montana", "expected": "Somnivale"}
+{"input": "Ficha de treino\nextrato seco de Valeriana montana\nMarca: Sornnivale", "expected": "Somnivale"}
+{"input": "Catálogo de amostras\nS0mnivaIe | código 375", "expected": "Somnivale"}
+{"input": "Nome comercial Sornnival3 | composição extrato seco de Valeriana montana", "expected": "Somnivale"}
+{"input": "Somn ivale\nApresentação: cápsula 200 mg\nLote simulado 808", "expected": "Somnivale"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 977 - Somniavle - extrato seco de Valeriana montana", "expected": "Somnivale"}
+{"input": "Ficha de treino\nextrato seco de Valeriana montana\nMarca: OMNIVALE", "expected": "Somnivale"}
+{"input": "Catálogo de amostras\nSOMNIVAIE | código 262", "expected": "Somnivale"}
+{"input": "Nome comercial VENTA CID | composição hidróxido de magnidril + simeticona", "expected": "Ventacid"}
+{"input": "Vnetacid\nApresentação: suspensão oral\nLote simulado 224", "expected": "Ventacid"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 624 - Ventacd - hidróxido de magnidril + simeticona", "expected": "Ventacid"}
+{"input": "Ficha de treino\nhidróxido de magnidril + simeticona\nMarca: VENTAC1D", "expected": "Ventacid"}
+{"input": "Catálogo de amostras\nVEN7AC1D | código 326", "expected": "Ventacid"}
+{"input": "Nome comercial VEN74CID | composição hidróxido de magnidril + simeticona", "expected": "Ventacid"}
+{"input": "Ventac id\nApresentação: suspensão oral\nLote simulado 739", "expected": "Ventacid"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 425 - Ventaicd - hidróxido de magnidril + simeticona", "expected": "Ventacid"}
+{"input": "Ficha de treino\nhidróxido de magnidril + simeticona\nMarca: VNTACID", "expected": "Ventacid"}
+{"input": "Catálogo de amostras\nVen7acid | código 207", "expected": "Ventacid"}
+{"input": "Nome comercial ALERGON IX | composição feniradina", "expected": "Alergonix"}
+{"input": "Aelrgonix\nApresentação: comprimido 5 mg\nLote simulado 648", "expected": "Alergonix"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 275 - ALERGNIX - feniradina", "expected": "Alergonix"}
+{"input": "Ficha de treino\nfeniradina\nMarca: AIERGONIX", "expected": "Alergonix"}
+{"input": "Catálogo de amostras\nALERG0N1X | código 102", "expected": "Alergonix"}
+{"input": "Nome comercial 4L3RGONIX | composição feniradina", "expected": "Alergonix"}
+{"input": "ALER GONIX\nApresentação: comprimido 5 mg\nLote simulado 290", "expected": "Alergonix"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 109 - Alergoinx - feniradina", "expected": "Alergonix"}
+{"input": "Ficha de treino\nfeniradina\nMarca: Alrgonix", "expected": "Alergonix"}
+{"input": "Catálogo de amostras\nAlerg0nix | código 182", "expected": "Alergonix"}
+{"input": "Nome comercial Asmapl us | composição bronferol", "expected": "Asmaplus"}
+{"input": "Amsaplus\nApresentação: aerossol inalatório 100 mcg/dose\nLote simulado 322", "expected": "Asmaplus"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 826 - ASAPLUS - bronferol", "expected": "Asmaplus"}
+{"input": "Ficha de treino\nbronferol\nMarca: Asmaplu5", "expected": "Asmaplus"}
+{"input": "Catálogo de amostras\n4SM4PLUS | código 689", "expected": "Asmaplus"}
+{"input": "Nome comercial Asrnaplu5 | composição bronferol", "expected": "Asmaplus"}
+{"input": "AS MAPLUS\nApresentação: aerossol inalatório 100 mcg/dose\nLote simulado 381", "expected": "Asmaplus"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 344 - sAmaplus - bronferol", "expected": "Asmaplus"}
+{"input": "Ficha de treino\nbronferol\nMarca: Asmalus", "expected": "Asmaplus"}
+{"input": "Catálogo de amostras\nAsm4plus | código 500", "expected": "Asmaplus"}
+{"input": "Nome comercial CA RDIOVAST | composição nervastatina cálcica", "expected": "Cardiovast"}
+{"input": "Cardiovsat\nApresentação: comprimido 20 mg\nLote simulado 521", "expected": "Cardiovast"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 177 - CARDIOVAT - nervastatina cálcica", "expected": "Cardiovast"}
+{"input": "Ficha de treino\nnervastatina cálcica\nMarca: CARDIOV4ST", "expected": "Cardiovast"}
+{"input": "Catálogo de amostras\nCard10vast | código 343", "expected": "Cardiovast"}
+{"input": "Nome comercial CARDIOVA57 | composição nervastatina cálcica", "expected": "Cardiovast"}
+{"input": "CARDIO VAST\nApresentação: comprimido 20 mg\nLote simulado 844", "expected": "Cardiovast"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 522 - Cardiovsat - nervastatina cálcica", "expected": "Cardiovast"}
+{"input": "Ficha de treino\nnervastatina cálcica\nMarca: Cardovast", "expected": "Cardiovast"}
+{"input": "Catálogo de amostras\nCARDIOVA5T | código 964", "expected": "Cardiovast"}
+{"input": "Nome comercial Tire onorm | composição levotironato de sódio", "expected": "Tireonorm"}
+{"input": "Tieronorm\nApresentação: comprimido 50 mcg\nLote simulado 343", "expected": "Tireonorm"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 770 - TIREONRM - levotironato de sódio", "expected": "Tireonorm"}
+{"input": "Ficha de treino\nlevotironato de sódio\nMarca: 7IREONORM", "expected": "Tireonorm"}
+{"input": "Catálogo de amostras\nT1R3ONORM | código 268", "expected": "Tireonorm"}
+{"input": "Nome comercial 7ir3onorm | composição levotironato de sódio", "expected": "Tireonorm"}
+{"input": "Tireon orm\nApresentação: comprimido 50 mcg\nLote simulado 624", "expected": "Tireonorm"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 254 - Tieronorm - levotironato de sódio", "expected": "Tireonorm"}
+{"input": "Ficha de treino\nlevotironato de sódio\nMarca: TIRONORM", "expected": "Tireonorm"}
+{"input": "Catálogo de amostras\nTir3onorm | código 414", "expected": "Tireonorm"}
+{"input": "Nome comercial FERRO NATO | composição ferripolimaltosado", "expected": "Ferronato"}
+{"input": "Ferronaot\nApresentação: comprimido mastigável 100 mg\nLote simulado 998", "expected": "Ferronato"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 189 - FERRNATO - ferripolimaltosado", "expected": "Ferronato"}
+{"input": "Ficha de treino\nferripolimaltosado\nMarca: FERRONAT0", "expected": "Ferronato"}
+{"input": "Catálogo de amostras\nFerr0n4to | código 598", "expected": "Ferronato"}
+{"input": "Nome comercial F3rr0nato | composição ferripolimaltosado", "expected": "Ferronato"}
+{"input": "Ferr onato\nApresentação: comprimido mastigável 100 mg\nLote simulado 789", "expected": "Ferronato"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 467 - FERRONATO - ferripolimaltosado", "expected": "Ferronato"}
+{"input": "Ficha de treino\nferripolimaltosado\nMarca: Ferronao", "expected": "Ferronato"}
+{"input": "Catálogo de amostras\nFerrona7o | código 513", "expected": "Ferronato"}
+{"input": "Nome comercial VI TABEX | composição complexo B (B1, B6, B12)", "expected": "Vitabex"}
+{"input": "Vitbaex\nApresentação: cápsula\nLote simulado 821", "expected": "Vitabex"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 176 - itabex - complexo B (B1, B6, B12)", "expected": "Vitabex"}
+{"input": "Ficha de treino\ncomplexo B (B1, B6, B12)\nMarca: V1tabex", "expected": "Vitabex"}
+{"input": "Catálogo de amostras\nV1TAB3X | código 641", "expected": "Vitabex"}
+{"input": "Nome comercial V1t4bex | composição complexo B (B1, B6, B12)", "expected": "Vitabex"}
+{"input": "VI TABEX\nApresentação: cápsula\nLote simulado 292", "expected": "Vitabex"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 162 - Vtiabex - complexo B (B1, B6, B12)", "expected": "Vitabex"}
+{"input": "Ficha de treino\ncomplexo B (B1, B6, B12)\nMarca: Vitaex", "expected": "Vitabex"}
+{"input": "Catálogo de amostras\nVit4bex | código 481", "expected": "Vitabex"}
+{"input": "Nome comercial Cic lofem | composição etinilox + levonox", "expected": "Ciclofem"}
+{"input": "CICLOFME\nApresentação: comprimido 0,03 mg + 0,15 mg\nLote simulado 180", "expected": "Ciclofem"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 825 - CICLOFM - etinilox + levonox", "expected": "Ciclofem"}
+{"input": "Ficha de treino\netinilox + levonox\nMarca: Ciclofern", "expected": "Ciclofem"}
+{"input": "Catálogo de amostras\nCicI0fem | código 954", "expected": "Ciclofem"}
+{"input": "Nome comercial Cicl0fern | composição etinilox + levonox", "expected": "Ciclofem"}
+{"input": "CICL OFEM\nApresentação: comprimido 0,03 mg + 0,15 mg\nLote simulado 621", "expected": "Ciclofem"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 283 - CCILOFEM - etinilox + levonox", "expected": "Ciclofem"}
+{"input": "Ficha de treino\netinilox + levonox\nMarca: Ciclfem", "expected": "Ciclofem"}
+{"input": "Catálogo de amostras\nCiclof3m | código 518", "expected": "Ciclofem"}
+{"input": "Nome comercial ANSIOPLA NT | composição extrato seco de Passiflora brasiliensis", "expected": "Ansioplant"}
+{"input": "ANISOPLANT\nApresentação: cápsula 250 mg\nLote simulado 467", "expected": "Ansioplant"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 380 - Asioplant - extrato seco de Passiflora brasiliensis", "expected": "Ansioplant"}
+{"input": "Ficha de treino\nextrato seco de Passiflora brasiliensis\nMarca: ANSIOPL4NT", "expected": "Ansioplant"}
+{"input": "Catálogo de amostras\nAn5iopl4nt | código 122", "expected": "Ansioplant"}
+{"input": "Nome comercial ANS1OPL4NT | composição extrato seco de Passiflora brasiliensis", "expected": "Ansioplant"}
+{"input": "ANSIO PLANT\nApresentação: cápsula 250 mg\nLote simulado 946", "expected": "Ansioplant"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 943 - NASIOPLANT - extrato seco de Passiflora brasiliensis", "expected": "Ansioplant"}
+{"input": "Ficha de treino\nextrato seco de Passiflora brasiliensis\nMarca: ANIOPLANT", "expected": "Ansioplant"}
+{"input": "Catálogo de amostras\nANS1OPLANT | código 159", "expected": "Ansioplant"}
+{"input": "Nome comercial RE UMAXIL | composição reumexato", "expected": "Reumaxil"}
+{"input": "REUMXAIL\nApresentação: comprimido 2,5 mg\nLote simulado 287", "expected": "Reumaxil"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 890 - eumaxil - reumexato", "expected": "Reumaxil"}
+{"input": "Ficha de treino\nreumexato\nMarca: ReumaxiI", "expected": "Reumaxil"}
+{"input": "Catálogo de amostras\nReumaxi1 | código 993", "expected": "Reumaxil"}
+{"input": "Nome comercial R3UMAXII | composição reumexato", "expected": "Reumaxil"}
+{"input": "Reuma xil\nApresentação: comprimido 2,5 mg\nLote simulado 396", "expected": "Reumaxil"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 213 - Reuamxil - reumexato", "expected": "Reumaxil"}
+{"input": "Ficha de treino\nreumexato\nMarca: Reumaxl", "expected": "Reumaxil"}
+{"input": "Catálogo de amostras\nREUM4XIL | código 568", "expected": "Reumaxil"}
+{"input": "Nome comercial Dermato pol | composição sulfato de polidermina + bacitracina zínica", "expected": "Dermatopol"}
+{"input": "DEMRATOPOL\nApresentação: pomada dermatológica\nLote simulado 234", "expected": "Dermatopol"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 353 - Dermatool - sulfato de polidermina + bacitracina zínica", "expected": "Dermatopol"}
+{"input": "Ficha de treino\nsulfato de polidermina + bacitracina zínica\nMarca: D3rmatopol", "expected": "Dermatopol"}
+{"input": "Catálogo de amostras\nD3rm4topol | código 106", "expected": "Dermatopol"}
+{"input": "Nome comercial DerrnatopoI | composição sulfato de polidermina + bacitracina zínica", "expected": "Dermatopol"}
+{"input": "Dermat opol\nApresentação: pomada dermatológica\nLote simulado 686", "expected": "Dermatopol"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 931 - DERMATOOPL - sulfato de polidermina + bacitracina zínica", "expected": "Dermatopol"}
+{"input": "Ficha de treino\nsulfato de polidermina + bacitracina zínica\nMarca: DERMTOPOL", "expected": "Dermatopol"}
+{"input": "Catálogo de amostras\nDERM4TOPOL | código 610", "expected": "Dermatopol"}
+{"input": "Nome comercial OFTA LMIL | composição lacrimetil 0,5%", "expected": "Oftalmil"}
+{"input": "Oftaliml\nApresentação: colírio\nLote simulado 863", "expected": "Oftalmil"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 947 - Oftalml - lacrimetil 0,5%", "expected": "Oftalmil"}
+{"input": "Ficha de treino\nlacrimetil 0,5%\nMarca: Oftalm1l", "expected": "Oftalmil"}
+{"input": "Catálogo de amostras\n0ftalmiI | código 971", "expected": "Oftalmil"}
+{"input": "Nome comercial Of7aImil | composição lacrimetil 0,5%", "expected": "Oftalmil"}
+{"input": "OFT ALMIL\nApresentação: colírio\nLote simulado 933", "expected": "Oftalmil"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 603 - OFATLMIL - lacrimetil 0,5%", "expected": "Oftalmil"}
+{"input": "Ficha de treino\nlacrimetil 0,5%\nMarca: Oftalml", "expected": "Oftalmil"}
+{"input": "Catálogo de amostras\nOftalm1l | código 123", "expected": "Oftalmil"}
+{"input": "Nome comercial PROBION EX | composição blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)", "expected": "Probionex"}
+{"input": "PROBIOENX\nApresentação: sachê liofilizado\nLote simulado 715", "expected": "Probionex"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 937 - Probioex - blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)", "expected": "Probionex"}
+{"input": "Ficha de treino\nblend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)\nMarca: PROBION3X", "expected": "Probionex"}
+{"input": "Catálogo de amostras\nPROB1ON3X | código 417", "expected": "Probionex"}
+{"input": "Nome comercial Pr0bi0nex | composição blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)", "expected": "Probionex"}
+{"input": "Probion ex\nApresentação: sachê liofilizado\nLote simulado 403", "expected": "Probionex"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 208 - PROBINOEX - blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)", "expected": "Probionex"}
+{"input": "Ficha de treino\nblend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)\nMarca: Probionx", "expected": "Probionex"}
+{"input": "Catálogo de amostras\nProb1onex | código 667", "expected": "Probionex"}
+{"input": "Nome comercial Fu ngitrat | composição fungiderm 1%", "expected": "Fungitrat"}
+{"input": "Fugnitrat\nApresentação: creme dermatológico\nLote simulado 848", "expected": "Fungitrat"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 768 - Funitrat - fungiderm 1%", "expected": "Fungitrat"}
+{"input": "Ficha de treino\nfungiderm 1%\nMarca: FUNGITRA7", "expected": "Fungitrat"}
+{"input": "Catálogo de amostras\nFung1tr4t | código 295", "expected": "Fungitrat"}
+{"input": "Nome comercial FUNG1TRA7 | composição fungiderm 1%", "expected": "Fungitrat"}
+{"input": "Fungitr at\nApresentação: creme dermatológico\nLote simulado 455", "expected": "Fungitrat"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 287 - Fungirtat - fungiderm 1%", "expected": "Fungitrat"}
+{"input": "Ficha de treino\nfungiderm 1%\nMarca: Fungtrat", "expected": "Fungitrat"}
+{"input": "Catálogo de amostras\nFUNGITR4T | código 110", "expected": "Fungitrat"}
+{"input": "Nome comercial To sseclear | composição mucoclear", "expected": "Tosseclear"}
+{"input": "Tosseclear\nApresentação: xarope 40 mg/mL\nLote simulado 776", "expected": "Tosseclear"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 274 - TOSECLEAR - mucoclear", "expected": "Tosseclear"}
+{"input": "Ficha de treino\nmucoclear\nMarca: T0sseclear", "expected": "Tosseclear"}
+{"input": "Catálogo de amostras\nT05SECLEAR | código 520", "expected": "Tosseclear"}
+{"input": "Nome comercial T0SS3CLEAR | composição mucoclear", "expected": "Tosseclear"}
+{"input": "TOSSE CLEAR\nApresentação: xarope 40 mg/mL\nLote simulado 532", "expected": "Tosseclear"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 526 - Tsoseclear - mucoclear", "expected": "Tosseclear"}
+{"input": "Ficha de treino\nmucoclear\nMarca: TOSSELEAR", "expected": "Tosseclear"}
+{"input": "Catálogo de amostras\nTossecl3ar | código 959", "expected": "Tosseclear"}
+{"input": "Nome comercial VE NOCALM | composição venoflav", "expected": "Venocalm"}
+{"input": "Veoncalm\nApresentação: comprimido 450 mg\nLote simulado 257", "expected": "Venocalm"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 931 - enocalm - venoflav", "expected": "Venocalm"}
+{"input": "Ficha de treino\nvenoflav\nMarca: VENOC4LM", "expected": "Venocalm"}
+{"input": "Catálogo de amostras\nV3NOC4LM | código 633", "expected": "Venocalm"}
+{"input": "Nome comercial V3n0calm | composição venoflav", "expected": "Venocalm"}
+{"input": "Ven ocalm\nApresentação: comprimido 450 mg\nLote simulado 656", "expected": "Venocalm"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 662 - EVNOCALM - venoflav", "expected": "Venocalm"}
+{"input": "Ficha de treino\nvenoflav\nMarca: VENOALM", "expected": "Venocalm"}
+{"input": "Catálogo de amostras\nVenoc4lm | código 379", "expected": "Venocalm"}
+{"input": "Nome comercial Ins ulfort | composição insulina isolenta humana recombinante", "expected": "Insulfort"}
+{"input": "Inuslfort\nApresentação: suspensão injetável 100 UI/mL\nLote simulado 485", "expected": "Insulfort"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 744 - Insulort - insulina isolenta humana recombinante", "expected": "Insulfort"}
+{"input": "Ficha de treino\ninsulina isolenta humana recombinante\nMarca: INSULFOR7", "expected": "Insulfort"}
+{"input": "Catálogo de amostras\nIN5ULFOR7 | código 770", "expected": "Insulfort"}
+{"input": "Nome comercial IN5ULFOR7 | composição insulina isolenta humana recombinante", "expected": "Insulfort"}
+{"input": "Insul fort\nApresentação: suspensão injetável 100 UI/mL\nLote simulado 332", "expected": "Insulfort"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 445 - Inuslfort - insulina isolenta humana recombinante", "expected": "Insulfort"}
+{"input": "Ficha de treino\ninsulina isolenta humana recombinante\nMarca: Isulfort", "expected": "Insulfort"}
+{"input": "Catálogo de amostras\nINSULF0RT | código 526", "expected": "Insulfort"}
+{"input": "Nome comercial CORTI DERM | composição cortisonil 1%", "expected": "Cortiderm"}
+{"input": "Cortiedrm\nApresentação: creme dermatológico\nLote simulado 715", "expected": "Cortiderm"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 185 - Coriderm - cortisonil 1%", "expected": "Cortiderm"}
+{"input": "Ficha de treino\ncortisonil 1%\nMarca: C0RTIDERM", "expected": "Cortiderm"}
+{"input": "Catálogo de amostras\nCor7iderrn | código 261", "expected": "Cortiderm"}
+{"input": "Nome comercial COR7IDERRN | composição cortisonil 1%", "expected": "Cortiderm"}
+{"input": "Corti derm\nApresentação: creme dermatológico\nLote simulado 461", "expected": "Cortiderm"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 395 - Cortiedrm - cortisonil 1%", "expected": "Cortiderm"}
+{"input": "Ficha de treino\ncortisonil 1%\nMarca: CORTIDEM", "expected": "Cortiderm"}
+{"input": "Catálogo de amostras\nCort1derm | código 397", "expected": "Cortiderm"}
+{"input": "Nome comercial Mig ranol | composição betanolol", "expected": "Migranol"}
+{"input": "IMGRANOL\nApresentação: comprimido 40 mg\nLote simulado 128", "expected": "Migranol"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 221 - Migrnol - betanolol", "expected": "Migranol"}
+{"input": "Ficha de treino\nbetanolol\nMarca: MigranoI", "expected": "Migranol"}
+{"input": "Catálogo de amostras\nrnigr4nol | código 569", "expected": "Migranol"}
+{"input": "Nome comercial RN1GRANOL | composição betanolol", "expected": "Migranol"}
+{"input": "Mig ranol\nApresentação: comprimido 40 mg\nLote simulado 260", "expected": "Migranol"}
+{"input": "EMBALAGEM DIGITALIZADA - referência 905 - MIRGANOL - betanolol", "expected": "Migranol"}
+{"input": "Ficha de treino\nbetanolol\nMarca: igranol", "expected": "Migranol"}
+{"input": "Catálogo de amostras\nMigran0l | código 607", "expected": "Migranol"}

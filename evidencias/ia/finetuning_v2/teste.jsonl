@@ -1,0 +1,48 @@
+{"input": "Etiq. de estoque n. 851\ncomprimido 10 mg\nMarca impressa PR ESSORMIN", "expected": "Pressormin"}
+{"input": "losaprilato de sódio\nConferência de rótulo 982\nPre5s0rmin | embalagem ilustrativa", "expected": "Pressormin"}
+{"input": "Etiq. de estoque n. 732\ncomprimido 500 mg\nMarca impressa GLIOFRIN", "expected": "Gliforin"}
+{"input": "glibenzida\nConferência de rótulo 534\nGl iforin | embalagem ilustrativa", "expected": "Gliforin"}
+{"input": "Etiq. de estoque n. 558\ncomprimido 750 mg\nMarca impressa DORFANO", "expected": "Dorfanol"}
+{"input": "paraxetamol\nConferência de rótulo 826\nDorafnol | embalagem ilustrativa", "expected": "Dorfanol"}
+{"input": "Etiq. de estoque n. 721\ncomprimido 50 mg\nMarca impressa CEFATR4X", "expected": "Cefatrax"}
+{"input": "cetraxato de potássio\nConferência de rótulo 738\nCEFATAX | embalagem ilustrativa", "expected": "Cefatrax"}
+{"input": "Etiq. de estoque n. 991\ncápsula 200 mg\nMarca impressa S0mniv4le", "expected": "Somnivale"}
+{"input": "extrato seco de Valeriana montana\nConferência de rótulo 722\nSOMN1VALE | embalagem ilustrativa", "expected": "Somnivale"}
+{"input": "Etiq. de estoque n. 611\nsuspensão oral\nMarca impressa V3NT4CID", "expected": "Ventacid"}
+{"input": "hidróxido de magnidril + simeticona\nConferência de rótulo 894\nVEN74CID | embalagem ilustrativa", "expected": "Ventacid"}
+{"input": "Etiq. de estoque n. 802\ncomprimido 5 mg\nMarca impressa Alergo nix", "expected": "Alergonix"}
+{"input": "feniradina\nConferência de rótulo 262\n4l3rgonix | embalagem ilustrativa", "expected": "Alergonix"}
+{"input": "Etiq. de estoque n. 490\naerossol inalatório 100 mcg/dose\nMarca impressa sAmaplus", "expected": "Asmaplus"}
+{"input": "bronferol\nConferência de rótulo 918\nASMAPL US | embalagem ilustrativa", "expected": "Asmaplus"}
+{"input": "Etiq. de estoque n. 450\ncomprimido 20 mg\nMarca impressa CARDIOVAT", "expected": "Cardiovast"}
+{"input": "nervastatina cálcica\nConferência de rótulo 343\nCardioavst | embalagem ilustrativa", "expected": "Cardiovast"}
+{"input": "Etiq. de estoque n. 169\ncomprimido 50 mcg\nMarca impressa 7IREONORM", "expected": "Tireonorm"}
+{"input": "levotironato de sódio\nConferência de rótulo 277\nTireonom | embalagem ilustrativa", "expected": "Tireonorm"}
+{"input": "Etiq. de estoque n. 431\ncomprimido mastigável 100 mg\nMarca impressa Ferrona70", "expected": "Ferronato"}
+{"input": "ferripolimaltosado\nConferência de rótulo 970\nF3RRONATO | embalagem ilustrativa", "expected": "Ferronato"}
+{"input": "Etiq. de estoque n. 280\ncápsula\nMarca impressa V17abex", "expected": "Vitabex"}
+{"input": "complexo B (B1, B6, B12)\nConferência de rótulo 846\nV1TAB3X | embalagem ilustrativa", "expected": "Vitabex"}
+{"input": "Etiq. de estoque n. 637\ncomprimido 0,03 mg + 0,15 mg\nMarca impressa CICLO FEM", "expected": "Ciclofem"}
+{"input": "etinilox + levonox\nConferência de rótulo 730\nC1cIofem | embalagem ilustrativa", "expected": "Ciclofem"}
+{"input": "Etiq. de estoque n. 992\ncápsula 250 mg\nMarca impressa Ansoiplant", "expected": "Ansioplant"}
+{"input": "extrato seco de Passiflora brasiliensis\nConferência de rótulo 110\nAnsiopl ant | embalagem ilustrativa", "expected": "Ansioplant"}
+{"input": "Etiq. de estoque n. 151\ncomprimido 2,5 mg\nMarca impressa Reumaxl", "expected": "Reumaxil"}
+{"input": "reumexato\nConferência de rótulo 410\nREUMAXLI | embalagem ilustrativa", "expected": "Reumaxil"}
+{"input": "Etiq. de estoque n. 781\npomada dermatológica\nMarca impressa D3rmatopol", "expected": "Dermatopol"}
+{"input": "sulfato de polidermina + bacitracina zínica\nConferência de rótulo 468\nermatopol | embalagem ilustrativa", "expected": "Dermatopol"}
+{"input": "Etiq. de estoque n. 887\ncolírio\nMarca impressa 0ft4lmil", "expected": "Oftalmil"}
+{"input": "lacrimetil 0,5%\nConferência de rótulo 982\nOFT4LMIL | embalagem ilustrativa", "expected": "Oftalmil"}
+{"input": "Etiq. de estoque n. 949\nsachê liofilizado\nMarca impressa Pr0bion3x", "expected": "Probionex"}
+{"input": "blend probiótico (Lactobacillus BR-1 + Bifidobacterium BR-2)\nConferência de rótulo 731\nPr0b1onex | embalagem ilustrativa", "expected": "Probionex"}
+{"input": "Etiq. de estoque n. 159\ncreme dermatológico\nMarca impressa FUNGI TRAT", "expected": "Fungitrat"}
+{"input": "fungiderm 1%\nConferência de rótulo 389\nFUNGI7R4T | embalagem ilustrativa", "expected": "Fungitrat"}
+{"input": "Etiq. de estoque n. 744\nxarope 40 mg/mL\nMarca impressa Tosesclear", "expected": "Tosseclear"}
+{"input": "mucoclear\nConferência de rótulo 309\nTOS SECLEAR | embalagem ilustrativa", "expected": "Tosseclear"}
+{"input": "Etiq. de estoque n. 426\ncomprimido 450 mg\nMarca impressa Venocal", "expected": "Venocalm"}
+{"input": "venoflav\nConferência de rótulo 659\nVEONCALM | embalagem ilustrativa", "expected": "Venocalm"}
+{"input": "Etiq. de estoque n. 743\nsuspensão injetável 100 UI/mL\nMarca impressa 1nsulfort", "expected": "Insulfort"}
+{"input": "insulina isolenta humana recombinante\nConferência de rótulo 572\nNSULFORT | embalagem ilustrativa", "expected": "Insulfort"}
+{"input": "Etiq. de estoque n. 769\ncreme dermatológico\nMarca impressa Cor71derm", "expected": "Cortiderm"}
+{"input": "cortisonil 1%\nConferência de rótulo 786\nCOR7IDERM | embalagem ilustrativa", "expected": "Cortiderm"}
+{"input": "Etiq. de estoque n. 549\ncomprimido 40 mg\nMarca impressa RNIGRAN0L", "expected": "Migranol"}
+{"input": "betanolol\nConferência de rótulo 959\nMIGRAN0I | embalagem ilustrativa", "expected": "Migranol"}
