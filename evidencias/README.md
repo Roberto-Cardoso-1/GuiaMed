@@ -12,6 +12,14 @@
 | Planos de execução | `seguranca/planos_execucao.txt` |
 | Auditoria da IA | `seguranca/auditoria_n8n.txt` e `permissoes_integracao.txt` |
 
+## Prints para anexar à entrega
+
+- `prints/01_n8n_execucao.png`: execução ponta a ponta com três nós em
+  `success`, fonte, auditoria e `status_evidencia: PASSOU`.
+- `prints/02_seguranca_resumo.png`: oito verificações automatizadas aprovadas.
+- `prints/03_integracao_permissoes.png`: acesso direto negado, função autorizada,
+  mascaramento, auditoria e RLS separando os dispositivos A e B.
+
 Todos os dados usados nas evidências são fictícios ou anonimizados. Arquivos de
 configuração local, credenciais, banco do n8n e ambiente Python não são
 versionados.
