@@ -11,3 +11,7 @@
 A saída integrada ao PostgreSQL está em `execucao_workflow_banco.txt`. A
 auditoria correspondente, consultada pelo perfil de suporte com hash mascarado,
 está em `../seguranca/auditoria_n8n.txt`.
+
+O início do log registra um aviso do executor Python opcional do n8n. O workflow
+não possui nós Python; por isso o aviso não afetou a execução, que terminou com
+os três nós em `success` e a validação em `PASSOU`.
