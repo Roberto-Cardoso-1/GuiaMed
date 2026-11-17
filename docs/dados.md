@@ -7,9 +7,12 @@ Dois conjuntos, ambos sintéticos:
 1. **24 bulas de medicamentos fictícios**, cada uma com 6 seções (indicação, posologia, contraindicações, efeitos adversos, interações, advertências) — superando o mínimo exigido de 20 itens. É a base do **RAG**: o que o app "lê em voz alta" quando a pessoa aponta a câmera para um remédio.
    - Fonte única estruturada: [`data/bulas.json`](../data/bulas.json)
    - Versão documento (RAG): [`data/bulas_md/`](../data/bulas_md/) (24 arquivos `.md`)
-   - Carga no banco: `db/03_seed.sql` (gerado por `scripts/generate_seed.py`) → 24 medicamentos + 144 chunks
+   - Índice local: `backend/local_rag.py` → 24 medicamentos e 144 chunks
 
-2. **Dataset de OCR para o fine-tuning** (300 pares texto-OCR-ruidoso → JSON estruturado), gerado a partir das próprias 24 bulas com **ruído de câmera simulado** (acentos perdidos, quebras de linha, trocas visuais 0/O, 1/l, m/rn, cortes de borda). Amostra real em [`data/ft/ocr_extractor_amostra.jsonl`](../data/ft/ocr_extractor_amostra.jsonl).
+2. **Dataset para ajuste supervisionado local** com 300 textos de OCR ruidoso
+   e rótulo do medicamento, gerado a partir das 24 bulas. O arquivo completo
+   está em [`data/ft/ocr_finetuning_local.jsonl`](../data/ft/ocr_finetuning_local.jsonl)
+   e é reproduzível por `scripts/run_ai_evidence.py`.
 
 ## Inventário das bulas
 
@@ -40,7 +43,9 @@ Dois conjuntos, ambos sintéticos:
 | 23 | Cortiderm | corticoide tópico | vermelha |
 | 24 | Migranol | betabloqueador (profilaxia) | vermelha |
 
-Alguns itens foram criados propositalmente com **interações entre si** (ex.: Tireonorm × Ventacid/Ferronato; Asmaplus × Migranol; Reumaxil com posologia semanal crítica) — para testar o RAG e o alerta de alergia em casos difíceis (o usuário do demo no `db/05_seed_app.sql` é alérgico a um deles).
+Alguns itens foram criados propositalmente com **interações entre si** (ex.:
+Tireonorm × Ventacid/Ferronato; Asmaplus × Migranol) para testar o RAG em casos
+difíceis.
 
 ## Origem
 

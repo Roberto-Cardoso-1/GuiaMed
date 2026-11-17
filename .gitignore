@@ -45,6 +45,13 @@ app/src/main/assets/tessdata/*.traineddata
 
 # Logs
 *.log
+*.pid
+evidencias/n8n/backend.stdout.txt
+evidencias/n8n/backend.stderr.txt
+
+# Bancos e ferramentas locais de evidência
+.evidence-db/
+.n8n-local/
 
 # Temporary files
 *.tmp

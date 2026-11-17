@@ -1,0 +1,122 @@
+{
+  "id": "guiamedLocalRagV1",
+  "name": "GuiaMed - RAG local auditável",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0f4b8207-5509-4b78-8d54-821c2e9936aa",
+      "name": "Iniciar evidência",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/rag/consultar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "{\"device_id\":\"n8n-aparelho-ficticio-001\",\"pergunta\":\"Para que serve Pressormin?\",\"timestamp\":1794800000}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "620c9bd8-b3bc-45a1-927e-c898220b9e56",
+      "name": "Consultar RAG local",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b4b3ae8e-545f-49c1-b851-27cd4bacf7a8",
+              "name": "status_evidencia",
+              "value": "={{ $json.fontes && $json.fontes.length > 0 && $json.auditoria_id ? 'PASSOU' : 'FALHOU' }}",
+              "type": "string"
+            },
+            {
+              "id": "933ab8ce-57b4-47ad-9b8c-727cb8e53d50",
+              "name": "resposta",
+              "value": "={{ $json.resposta }}",
+              "type": "string"
+            },
+            {
+              "id": "89a4e6b7-6a8e-443c-8d79-b5cc0be7ed9f",
+              "name": "fontes",
+              "value": "={{ $json.fontes }}",
+              "type": "array"
+            },
+            {
+              "id": "b3dcb8b8-cfc7-4d4b-9df6-02027ae3642e",
+              "name": "auditoria_id",
+              "value": "={{ $json.auditoria_id }}",
+              "type": "string"
+            },
+            {
+              "id": "e619a420-70ab-4308-9a10-29f2eae1c97c",
+              "name": "latencia_ms",
+              "value": "={{ $json.latencia_ms }}",
+              "type": "number"
+            },
+            {
+              "id": "445e49a6-143e-4e72-aa09-8f02c481d238",
+              "name": "custo_usd",
+              "value": "={{ $json.custo_usd }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5fe588bc-18f1-4504-9d58-ecf6864027a4",
+      "name": "Validar resposta e auditoria",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, 300]
+    }
+  ],
+  "connections": {
+    "Iniciar evidência": {
+      "main": [
+        [
+          {
+            "node": "Consultar RAG local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar RAG local": {
+      "main": [
+        [
+          {
+            "node": "Validar resposta e auditoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true
+  },
+  "pinData": {},
+  "tags": []
+}

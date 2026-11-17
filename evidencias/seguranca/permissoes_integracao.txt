@@ -1,0 +1,56 @@
+Pager usage is off.
+EVIDENCIA 1 - perfil da IA não pode consultar tabela diretamente
+SET
+psql:C:/meu-sistema/GuiaMed/db/postgres/03_evidencias_integracao.sql:6: ERROR:  permission denied for schema guiamed_private
+LINE 1: SELECT * FROM guiamed_private.allergy LIMIT 1;
+                      ^
+EVIDENCIA 2 - perfil da IA pode usar somente a função autorizada
+ alergia_registrada 
+--------------------
+ dipirona
+(1 row)
+
+ alerta_alergia 
+----------------
+ t
+(1 row)
+
+EVIDENCIA 3 - auditoria registra quem, o que, fontes e quando
+             auditoria_id             
+--------------------------------------
+ ce836195-5e1e-45c9-b4d6-f69c200faca9
+(1 row)
+
+RESET
+EVIDENCIA 4 - suporte vê somente identificador mascarado
+SET
+                         requester_masked                         | operation |              sources               |         requested_at          | latency_ms | cost_usd 
+------------------------------------------------------------------+-----------+------------------------------------+-------------------------------+------------+----------
+ ********************************************************91731642 | rag_local | ["pressormin#indicacao"]           | 2026-11-16 23:21:12.636957-03 |      0.800 | 0.000000
+ ********************************************************c5c1e163 | rag_local | ["medicamento-ficticio#indicacao"] | 2026-10-12 13:46:39-03        |     79.500 | 0.000000
+(2 rows)
+
+RESET
+EVIDENCIA 5 - RLS: paciente A não vê dados do paciente B
+SET
+                            set_config                            
+------------------------------------------------------------------
+ f04a600d45facb82d98b955b1a3202e08633590fb804e187d58d4f2391731642
+(1 row)
+
+ alergias_visiveis_para_a 
+--------------------------
+                        1
+(1 row)
+
+                            set_config                            
+------------------------------------------------------------------
+ 29f163f4adfe02a89e9d0b6fd60a835ab7095018370c3c5432bd910a5d725613
+(1 row)
+
+ alergias_visiveis_para_b 
+--------------------------
+                        0
+(1 row)
+
+RESET

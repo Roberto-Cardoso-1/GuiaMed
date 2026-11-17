@@ -20,7 +20,8 @@ O vetor mais interessante deste projeto: a entrada do LLM vem do **OCR da câmer
 
 **Defesas em camadas (o que medimos):**
 
-1. **Extrator fine-tuned** só tem uma função: OCR → JSON com 3 campos (`nome_comercial`, `principio_ativo`, `validade`). Instrução impressa **não é um campo** — não há para onde o comando ir nessa conversão.
+1. **Classificador local ajustado** só identifica uma das classes de medicamento;
+   uma instrução impressa não é executada nem enviada a serviço externo.
 2. **System prompt rígido:** o texto vindo da embalagem entra delimitado (`<ocr>…</ocr>`) com instrução explícita de que o conteúdo é **dado, não comando**.
 3. **Pós-checagem determinística:** resposta deve citar `medicamento#seção` presente nos chunks recuperados **e** o medicamento citado deve bater com o JSON do extrator; divergência → resposta padrão falada.
 4. **Auditoria:** OCR bruto, JSON extraído e classificação ficam em `consulta_log` para contagem.

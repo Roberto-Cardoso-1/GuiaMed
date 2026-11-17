@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-11-16T22:30:00-03:00",
+  "dataset": {
+    "total": 300,
+    "train": 240,
+    "test": 60,
+    "classes": 24,
+    "source": "24 bulas fictícias do projeto"
+  },
+  "training": {
+    "method": "Naive Bayes de n-gramas de caracteres ajustado localmente",
+    "training_ms": 15.804,
+    "baseline_accuracy": 0.8,
+    "tuned_accuracy": 1.0,
+    "improvement_percentage_points": 20.0
+  },
+  "rag": {
+    "chunks": 144,
+    "test_cases": 5,
+    "passed": 5,
+    "latency_mean_ms": 0.434,
+    "latency_p95_ms": 0.594,
+    "cost_per_request_usd": 0.0,
+    "cost_1000_requests_usd": 0.0
+  }
+}

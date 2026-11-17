@@ -1,0 +1,10 @@
+{
+  "volume_50000": true,
+  "auditoria_1000000": true,
+  "acesso_direto_negado": true,
+  "funcao_autorizada": true,
+  "mascara_exibida": true,
+  "rls_testada": true,
+  "q1_antes_depois": true,
+  "q2_antes_depois": true
+}

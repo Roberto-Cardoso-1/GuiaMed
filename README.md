@@ -27,6 +27,8 @@ Toda ação ou erro usa a tríade de acessibilidade: TTS em pt-BR, vibração e 
 - Android nativo em Kotlin, CameraX, ML Kit Text Recognition, TTS/STT do Android, Retrofit e Coroutines.
 - Catálogo DCB/Anvisa, parser de medicamentos, validade, receitas e alergias embarcados no Android.
 - FastAPI, Pydantic, `asyncpg` e PostgreSQL opcionais para integração acadêmica.
+- RAG TF-IDF local sobre 144 chunks de 24 bulas fictícias e workflow n8n
+  auto-hospedado para a evidência acadêmica, sem SaaS.
 - `PdfRenderer` nativo para OCR da primeira página de PDFs compartilhados.
 
 O parser local normaliza erros comuns de OCR, faz busca aproximada de medicamentos na base DCB da Anvisa e é conservador: não inventa dosagem nem validade. Ele reconhece rótulos de validade como `VAL`, `VTO` e carimbos compactos de fundo de caixa, por exemplo `V02 28`; uma linha de fabricação, como `F02 26`, não é tratada como validade. As alergias ficam no armazenamento privado do app e continuam disponíveis depois de fechar ou reiniciar o aparelho.
@@ -63,6 +65,8 @@ O build normal usa somente o processamento local. Para testar a integração com
 - `POST /alergias`: `{device_id, nome_alergia, timestamp}` → `{sucesso, mensagem, alergias_registradas}`
 - `POST /receita`: `{device_id, texto_ocr, timestamp}` → `{medicamentos, posologia_completa, horarios, mensagem}`
 - `GET /health`: estado da API e do armazenamento de alergias.
+- `POST /rag/consultar`: consulta local fundamentada às bulas fictícias, com
+  fontes, latência, custo e identificador de auditoria.
 
 Os modelos Android usam `@SerializedName` e permanecem sincronizados com essas chaves `snake_case`. O corpo OCR e os nomes de alergias não são gravados em logs.
 
@@ -74,6 +78,16 @@ python -m unittest -v test_parser.py
 ```
 
 Os testes cobrem regressões de OCR, busca aproximada, leitura local de receitas em linhas separadas, alertas de alergia, validade vencida e carimbos compactos de validade. Para câmera, voz, vibração, persistência offline e acessibilidade, execute também o roteiro de [COMO_TESTAR.md](COMO_TESTAR.md) em aparelho físico.
+
+Para reproduzir as evidências de IA:
+
+```powershell
+.\backend\.venv\Scripts\python.exe scripts\run_ai_evidence.py
+```
+
+Os resultados ficam em [`evidencias/`](evidencias/). O workflow importável está
+em [`n8n/workflows/guiamed_local_rag.json`](n8n/workflows/guiamed_local_rag.json)
+e os scripts PostgreSQL executáveis estão em [`db/postgres/`](db/postgres/).
 
 ## Segurança e configuração
 
