@@ -24,15 +24,16 @@ from datetime import date, datetime
 from difflib import SequenceMatcher
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import asyncpg
 from asyncpg.pool import Pool
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from local_lora import MAX_OCR_CHARS, LocalLora
 from local_rag import get_local_rag
 
 
@@ -43,6 +44,9 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: list[str] = Field(default_factory=list)
     tz: str = "America/Sao_Paulo"
+    lora_enabled: bool = True
+    lora_gguf_path: Path | None = None
+    lora_threads: int = Field(default=4, ge=1, le=32)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -362,6 +366,48 @@ def find_medicine(normalized_text: str) -> Optional[dict]:
     return best_medicine if best_score >= 0.72 else None
 
 
+@lru_cache(maxsize=1)
+def lora_catalog() -> tuple[dict[str, dict], dict[str, dict[str, dict]]]:
+    dcb_names, _ = load_dcb_catalog()
+    names = dict(dcb_names)
+    for medicine in MEDICINES:
+        for name in (medicine["nome"], *medicine["aliases"]):
+            names[normalize_ocr(name)] = medicine
+
+    compact_names: dict[str, dict[str, dict]] = {}
+    for name, medicine in names.items():
+        compact = name.replace(" ", "")
+        if compact.isalpha() and len(compact) >= 7:
+            compact_names.setdefault(compact, {})[medicine["nome"]] = medicine
+    return names, compact_names
+
+
+def corroborate_lora_name(
+    texto_ocr: str, suggest: Callable[[str], str | None],
+) -> dict | None:
+    if len(texto_ocr) > MAX_OCR_CHARS:
+        return None
+    names, compact_names = lora_catalog()
+    matches: dict[str, dict] = {}
+    for line in texto_ocr.splitlines():
+        words = normalize_ocr(line).split()
+        for start, word in enumerate(words):
+            if not word.isalpha():
+                continue
+            for end in range(start + 2, min(start + 6, len(words)) + 1):
+                if not words[end - 1].isalpha():
+                    break
+                matches.update(compact_names.get("".join(words[start:end]), {}))
+    if len(matches) != 1:
+        return None
+
+    suggestion = suggest(texto_ocr)
+    if not suggestion or not re.fullmatch(r"[^\W\d_]+(?:[ -][^\W\d_]+)*", suggestion):
+        return None
+    proposed = names.get(normalize_ocr(suggestion))
+    return matches.get(proposed["nome"]) if proposed else None
+
+
 def extract_dosage(normalized_text: str) -> Optional[str]:
     match = re.search(r"\b(\d{1,4}(?:[.,]\d+)?)\s*(MCG|MG|G|ML)\b", normalized_text)
     if not match:
@@ -400,9 +446,13 @@ def parse_verification(
     texto_ocr: str,
     allergies: list[str],
     today: Optional[date] = None,
+    *,
+    suggest_name: Callable[[str], str | None] | None = None,
 ) -> VerificarResponse:
     normalized = normalize_ocr(texto_ocr)
     medicine = find_medicine(normalized)
+    if medicine is None and suggest_name is not None:
+        medicine = corroborate_lora_name(texto_ocr, suggest_name)
     dosage = extract_dosage(normalized)
     validity, expired = extract_expiration(normalized, today=today)
 
@@ -486,13 +536,28 @@ def extract_recipe_instructions(normalized_text: str) -> Optional[str]:
     return ", ".join(instructions) or None
 
 
-def parse_recipe(texto_ocr: str) -> ReceitaResponse:
-    normalized_lines = [
-        normalized
-        for raw_line in (texto_ocr.splitlines() or [texto_ocr])
+def parse_recipe(
+    texto_ocr: str, *, suggest_name: Callable[[str], str | None] | None = None,
+) -> ReceitaResponse:
+    lines = [
+        (raw_line, normalized)
+        for raw_line in texto_ocr.splitlines()
         if (normalized := normalize_ocr(raw_line))
     ]
+    normalized_lines = [normalized for _, normalized in lines]
     detected_medicines = [find_medicine(line) for line in normalized_lines]
+    if suggest_name is not None and len(texto_ocr) <= MAX_OCR_CHARS and not any(detected_medicines):
+        inference_started = False
+
+        def suggest_once(line: str) -> str | None:
+            nonlocal inference_started
+            inference_started = True
+            return suggest_name(line)
+
+        for index, (raw_line, _) in enumerate(lines):
+            detected_medicines[index] = corroborate_lora_name(raw_line, suggest_once)
+            if inference_started:
+                break
     medicines: list[MedicamentoReceita] = []
     seen: set[str] = set()
     for line_index, medicine in enumerate(detected_medicines):
@@ -668,10 +733,32 @@ async def save_rag_audit(
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(application: FastAPI):
     await init_db_pool()
-    yield
-    await close_db_pool()
+    application.state.local_lora = None
+    try:
+        await asyncio.to_thread(lora_catalog)
+        try:
+            await asyncio.to_thread(get_local_rag)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+            logger.warning("RAG local indisponível no startup (%s)", type(error).__name__)
+        if settings.lora_enabled:
+            local_paths = (settings.lora_gguf_path, None) if settings.lora_gguf_path else (None,)
+            for model_path in local_paths:
+                runtime_name = "GGUF" if model_path else "FP32"
+                try:
+                    application.state.local_lora = await asyncio.to_thread(
+                        LocalLora.load, model_path, settings.lora_threads,
+                    )
+                except Exception as error:
+                    logger.warning("LoRA %s indisponível no startup (%s)", runtime_name, type(error).__name__)
+                else:
+                    logger.info("LoRA local carregado (%s)", runtime_name)
+                    break
+        yield
+    finally:
+        application.state.local_lora = None
+        await close_db_pool()
 
 
 app = FastAPI(
@@ -700,10 +787,13 @@ async def health_check() -> HealthResponse:
 
 
 @app.post("/verificar", response_model=VerificarResponse, tags=["Medicamentos"])
-async def verificar_medicamento(request: VerificarRequest) -> VerificarResponse:
+async def verificar_medicamento(request: VerificarRequest, http_request: Request) -> VerificarResponse:
     try:
         allergies = await get_allergies(request.device_id)
-        return parse_verification(request.texto_ocr, allergies)
+        lora = getattr(http_request.app.state, "local_lora", None)
+        return await asyncio.to_thread(
+            parse_verification, request.texto_ocr, allergies, suggest_name=lora.suggest if lora else None,
+        )
     except Exception as exc:
         logger.exception("Falha ao verificar medicamento")
         raise HTTPException(status_code=500, detail="Erro ao verificar medicamento") from exc
@@ -724,9 +814,12 @@ async def cadastrar_alergia(request: AlergiaRequest) -> AlergiaResponse:
 
 
 @app.post("/receita", response_model=ReceitaResponse, tags=["Receitas"])
-async def processar_receita(request: ReceitaRequest) -> ReceitaResponse:
+async def processar_receita(request: ReceitaRequest, http_request: Request) -> ReceitaResponse:
     try:
-        return parse_recipe(request.texto_ocr)
+        lora = getattr(http_request.app.state, "local_lora", None)
+        return await asyncio.to_thread(
+            parse_recipe, request.texto_ocr, suggest_name=lora.suggest if lora else None,
+        )
     except Exception as exc:
         logger.exception("Falha ao processar receita")
         raise HTTPException(status_code=500, detail="Erro ao processar receita") from exc

@@ -1,11 +1,13 @@
 """Continua o treino LoRA e mede generalização em layouts sintéticos inéditos."""
 
+import argparse
 import hashlib
 import json
 import math
 import random
 import re
 import time
+from pathlib import Path
 
 import torch
 from peft import PeftModel, get_peft_model_state_dict, set_peft_model_state_dict
@@ -75,7 +77,7 @@ def make_example(medicine, layout, rng, variant):
     }
 
 
-def prepare_splits():
+def prepare_splits(output):
     medicines = json.loads((ROOT / "data" / "bulas.json").read_text(encoding="utf-8"))["bulas"]
     train_rng = random.Random(SEED)
     evaluation_rng = random.Random(SEED + 1)
@@ -99,7 +101,7 @@ def prepare_splits():
             raise ValueError("OCR repetido entre conjuntos")
         seen.update(keys)
     for filename, rows in (("treino", clean_train), ("validacao", validation), ("teste", test)):
-        (OUTPUT / f"{filename}.jsonl").write_text(
+        (output / f"{filename}.jsonl").write_text(
             "\n".join(json.dumps(row, ensure_ascii=False) for row in rows) + "\n", encoding="utf-8"
         )
     return clean_train, validation, test, old_test, removed_count
@@ -119,10 +121,13 @@ def paired_summary(previous, candidate):
 
 
 def main():
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT, help="Pasta dos resultados e do adaptador")
+    output = parser.parse_args().output_dir
+    output.mkdir(parents=True, exist_ok=True)
     set_seed(SEED)
     torch.set_num_threads(4)
-    train, validation, test, old_test, removed_count = prepare_splits()
+    train, validation, test, old_test, removed_count = prepare_splits(output)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
     tokenizer.pad_token = tokenizer.eos_token
     base = AutoModelForCausalLM.from_pretrained(MODEL_ID, revision=MODEL_REVISION, torch_dtype=torch.float32)
@@ -169,7 +174,7 @@ def main():
             best_score = ranking
             best_epoch = epoch
             best_weights = {key: value.detach().clone() for key, value in get_peft_model_state_dict(model).items()}
-        write_json(OUTPUT / "treino.json", {"steps": history, "validation": validation_log})
+        write_json(output / "treino.json", {"steps": history, "validation": validation_log})
 
     # Os conjuntos de teste só são avaliados após selecionar a época.
     print(f"Época {best_epoch} selecionada. Avaliando V1 e V2 nos mesmos textos.", flush=True)
@@ -177,10 +182,10 @@ def main():
     previous = evaluate(model, tokenizer, test)
     previous_old = evaluate(model, tokenizer, old_test)
     set_peft_model_state_dict(model, best_weights)
-    model.save_pretrained(OUTPUT / "adapter")
+    model.save_pretrained(output / "adapter")
     candidate = evaluate(model, tokenizer, test)
     candidate_old = evaluate(model, tokenizer, old_test)
-    write_json(OUTPUT / "respostas.json", {"novo_teste": {"v1": previous, "v2": candidate},
+    write_json(output / "respostas.json", {"novo_teste": {"v1": previous, "v2": candidate},
                                          "teste_anterior": {"v1": previous_old, "v2": candidate_old}})
     metrics = {
         "model": MODEL_ID, "revision": MODEL_REVISION, "seed": SEED,
@@ -192,9 +197,9 @@ def main():
         "new_test": paired_summary(previous, candidate),
         "old_test": paired_summary(previous_old, candidate_old),
         "previous_adapter_sha256": hashlib.sha256((PREVIOUS / "adapter_model.safetensors").read_bytes()).hexdigest(),
-        "adapter_sha256": hashlib.sha256((OUTPUT / "adapter" / "adapter_model.safetensors").read_bytes()).hexdigest(),
+        "adapter_sha256": hashlib.sha256((output / "adapter" / "adapter_model.safetensors").read_bytes()).hexdigest(),
     }
-    write_json(OUTPUT / "metricas.json", metrics)
+    write_json(output / "metricas.json", metrics)
     print(json.dumps(metrics, ensure_ascii=False, indent=2), flush=True)
 
 

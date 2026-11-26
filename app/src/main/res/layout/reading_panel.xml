@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/black"
+    android:fadeScrollbars="false"
+    android:fillViewport="true"
+    android:overScrollMode="never"
+    android:scrollbars="vertical">
+
+    <LinearLayout
+        android:id="@+id/topPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/black"
+        android:orientation="vertical">
+
+        <View
+            android:id="@+id/statusAccent"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:background="@color/yellow_high_contrast"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/appIdentity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="20dp"
+            android:fontFamily="sans-serif-medium"
+            android:importantForAccessibility="no"
+            android:letterSpacing="0.12"
+            android:text="@string/visual_identity"
+            android:textAllCaps="true"
+            android:textColor="@color/yellow_high_contrast"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/alertLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="20dp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.08"
+            android:textAllCaps="true"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/statusText"
+            style="@style/TextAppearance.GuiaMed.HighContrast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="20dp"
+            android:breakStrategy="high_quality"
+            android:hyphenationFrequency="none"
+            android:lineSpacingMultiplier="1.08"
+            android:text="@string/app_name" />
+
+        <View
+            android:id="@+id/statusDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="20dp"
+            android:background="@color/yellow_high_contrast"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/readingDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="18dp"
+            android:breakStrategy="high_quality"
+            android:fontFamily="sans-serif"
+            android:hyphenationFrequency="none"
+            android:lineSpacingExtra="3dp"
+            android:lineSpacingMultiplier="1.12"
+            android:textColor="@color/white"
+            android:textSize="22sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

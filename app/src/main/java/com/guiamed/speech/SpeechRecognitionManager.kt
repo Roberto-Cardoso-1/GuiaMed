@@ -22,7 +22,10 @@ class SpeechRecognitionManager(context: Context) {
     private var speechRecognizer: SpeechRecognizer? = null
     private var currentDeferred: CompletableDeferred<String>? = null
 
-    fun startListening(onReady: () -> Unit = {}): CompletableDeferred<String> {
+    fun startListening(
+        noMatchMessage: String = "Não entendi o que foi dito",
+        onReady: () -> Unit = {},
+    ): CompletableDeferred<String> {
         val deferred = CompletableDeferred<String>()
         mainHandler.post {
             currentDeferred?.takeIf { it.isActive }?.completeExceptionally(
@@ -40,7 +43,9 @@ class SpeechRecognitionManager(context: Context) {
                 val recognizer = SpeechRecognizer.createSpeechRecognizer(appContext)
                 speechRecognizer = recognizer
                 recognizer.setRecognitionListener(object : RecognitionListener {
-                    override fun onReadyForSpeech(params: Bundle?) = onReady()
+                    override fun onReadyForSpeech(params: Bundle?) {
+                        if (currentDeferred === deferred) onReady()
+                    }
                     override fun onBeginningOfSpeech() = Unit
                     override fun onRmsChanged(rmsdB: Float) = Unit
                     override fun onBufferReceived(buffer: ByteArray?) = Unit
@@ -52,7 +57,7 @@ class SpeechRecognitionManager(context: Context) {
                             SpeechRecognizer.ERROR_CLIENT -> "Reconhecimento interrompido"
                             SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Permissão de microfone negada"
                             SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Erro de rede no reconhecimento de voz"
-                            SpeechRecognizer.ERROR_NO_MATCH -> "Não entendi o nome da alergia"
+                            SpeechRecognizer.ERROR_NO_MATCH -> noMatchMessage
                             SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Microfone ocupado. Tente novamente"
                             SpeechRecognizer.ERROR_SERVER -> "Serviço de voz indisponível"
                             SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Nenhuma fala detectada. Tente novamente"
@@ -68,7 +73,7 @@ class SpeechRecognitionManager(context: Context) {
                             ?.firstOrNull()
                             .orEmpty()
                         if (text.isBlank()) {
-                            finishWithError(deferred, "Não entendi o nome da alergia")
+                            finishWithError(deferred, noMatchMessage)
                         } else {
                             finishWithResult(deferred, text)
                         }
@@ -100,14 +105,14 @@ class SpeechRecognitionManager(context: Context) {
 
     private fun finishWithResult(deferred: CompletableDeferred<String>, text: String) {
         if (currentDeferred !== deferred) return
-        if (deferred.isActive) deferred.complete(text)
         releaseRecognizer()
+        if (deferred.isActive) deferred.complete(text)
     }
 
     private fun finishWithError(deferred: CompletableDeferred<String>, message: String) {
         if (currentDeferred !== deferred) return
-        if (deferred.isActive) deferred.completeExceptionally(IllegalStateException(message))
         releaseRecognizer()
+        if (deferred.isActive) deferred.completeExceptionally(IllegalStateException(message))
     }
 
     fun stopListening() {

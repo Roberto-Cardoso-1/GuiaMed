@@ -29,6 +29,15 @@ Em outro terminal:
 4. Confirme o anúncio inicial e o painel preto com texto amarelo.
 5. Negue uma permissão em uma execução separada: deve haver painel vermelho, três vibrações longas e aviso falado. O toque longo deve abrir as configurações do app.
 
+### Interface com fonte ampliada
+
+1. Aumente o tamanho da fonte nos ajustes do Android e volte ao GuiaMed. Confira se o resultado e a legenda dos quatro gestos quebram em linhas e continuam legíveis.
+2. Confirme que os cantos amarelos aparecem quando a imagem da câmera está ativa. Faça os gestos na câmera, no painel de status e na legenda inferior.
+3. Provoque um alerta de alergia com o dado de teste. Confira o texto “Alerta de alergia” no painel vermelho, o aviso falado e as três vibrações longas.
+4. No tamanho máximo de fonte, leia uma receita de teste com vários medicamentos, pela câmera e por PDF. Confira se o painel exibe os nomes, as doses, a frequência e os demais campos falados. Role até o final e volte ao início. Na câmera, a rolagem dos detalhes não deve iniciar outra leitura.
+5. Leia uma embalagem com validade e compare os dados falados com os exibidos. Depois teste uma embalagem vencida e uma cadastrada como alergia para conferir os rótulos “Medicamento vencido” e “Alerta de alergia”.
+6. Faça o cadastro de alergia e confira se a confirmação mostra o nome que o app registrou.
+
 ## Regressões relatadas
 
 ### Receita impressa que ficava em captura
@@ -52,6 +61,9 @@ Use caixas reais, com boa luz, texto preenchendo a maior parte do enquadramento 
 | `IBUPROFENO 600 MG` | Fala 600 mg; nunca substitui por 250 mg |
 | Embalagem sem validade visível | Fala que a validade não foi encontrada; não inventa ano/data |
 | `VAL 10/2026` em novembro de 2026 | Marca vencido, painel vermelho e três vibrações longas |
+| `V02 28` somente na lateral, com `FAB 02/26` | Mantém o nome lido na frente e mostra e fala 02/2028 |
+| `Válido até 17/11/2026` em 18/11/2026 | Preserva o dia impresso e anuncia que venceu |
+| Somente `FAB 02/26`, data sem rótulo ou duas leituras divergentes | Nova tentativa ou “Validade não encontrada” |
 
 ## Gestos
 
@@ -61,6 +73,24 @@ Use caixas reais, com boa luz, texto preenchendo a maior parte do enquadramento 
 2. Deve ocorrer uma vibração curta e “Lendo embalagem”.
 3. O resultado deve ser falado com nome e apenas os dados realmente identificados.
 4. Falha de OCR ou rede deve produzir painel vermelho, TTS e três vibrações longas.
+5. Se o nome for encontrado sem alerta e sem validade, aguarde a instrução
+   e vire a **mesma embalagem**. Mostre a linha da validade mantendo o
+   celular parado. O nome da frente deve permanecer junto da data da lateral.
+6. Repita tocando uma vez durante a busca para cancelar. Repita também
+   colocando o app em segundo plano durante a busca. Ao voltar, uma nova
+   leitura deve funcionar sem receber resultado da foto anterior.
+
+### Primeira leitura e logs ao vivo
+
+1. Feche o app pelo sistema e reabra. Assim que a prévia aparecer, enquadre uma caixa e dê um toque. Confira o aviso curto “Lendo”, a vibração e o resultado. Repita de frente e com apenas o código EAN visível.
+2. Cadastre uma alergia de teste correspondente a uma substância da embalagem. Repita com texto e EAN. O alerta deve ser falado antes do nome e dos demais dados e o painel deve ficar vermelho.
+3. Com o TalkBack ativo, foque o título do painel e use o menu de ações do leitor para ler embalagem, ler receita ou acessar os demais comandos. Compare com os gestos e comandos de voz.
+4. Com depuração USB autorizada, acompanhe o tempo e a rota de leitura em outro terminal.
+
+```powershell
+adb devices
+adb logcat -v time -s GuiaMedScan:D OcrEngine:W GuiaMed:W
+```
 
 ### Dois toques — receita
 
@@ -108,3 +138,11 @@ adb shell dumpsys package com.guiamed | findstr permission
 
 Os logs podem registrar falhas técnicas e contagem de caracteres, mas não devem conter o texto OCR, receitas ou alergias.
 
+
+### Troca de função durante uma ação
+
+1. Inicie a leitura de embalagem com 1 toque. Durante o foco, OCR e fala do resultado, dê 3 toques: a leitura deve parar e iniciar o cadastro de alergia, com painel e duas vibrações curtas. O microfone só deve abrir depois da instrução falada.
+2. Durante o cadastro (instrução, escuta e confirmação), dê 2 toques: deve iniciar a leitura de receita sem falas ou resultados atrasados da alergia.
+3. Durante a captura e OCR da receita, dê 1 toque: deve iniciar a embalagem sem resultados ou erros atrasados da receita. Repita com uma imagem compartilhada.
+4. Troque várias vezes entre 1, 2 e 3 toques, inclusive durante a fala do resultado. Confirme que somente a última função continua e que a lanterna não permanece acesa no cadastro por voz.
+5. Confira que 4 toques ainda encerram a operação e que 1 toque após identificar a embalagem mantém a opção de concluir sem validade. A troca respeita a janela de 500 ms para reconhecer o gesto.

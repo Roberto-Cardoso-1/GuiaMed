@@ -11,23 +11,23 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:scaleType="fitCenter"
-        android:adjustViewBounds="true"
+        android:importantForAccessibility="no"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/readingPanel" />
 
     <!-- Texto de status (acessibilidade) -->
-    <TextView
-        android:id="@+id/statusText"
+    <include
+        android:id="@id/readingPanel"
+        layout="@layout/reading_panel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="@color/black"
-        android:padding="16dp"
-        android:text="@string/prescription_mode"
-        style="@style/TextAppearance.GuiaMed.HighContrast"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_bias="0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

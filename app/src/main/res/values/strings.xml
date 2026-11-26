@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">GuiaMed</string>
-    <string name="app_opened">GuiaMed aberto. Aponte a câmera para o remédio e toque uma vez na tela para ler. Toque três vezes seguidas na tela para falar o nome de um remédio ao qual você tem alergia. Ou toque duas vezes para ler uma receita. Toque quatro vezes para repetir as instruções.</string>
-    <string name="reading_package">Lendo embalagem...</string>
-    <string name="allergy_mode">Diga o nome do remédio ou componente ao qual você tem alergia.</string>
+    <string name="visual_identity">GuiaMed · Assistente de leitura</string>
+    <string name="camera_guide_label">Centralize a embalagem</string>
+    <string name="gesture_heading">Atalhos por toque</string>
+    <string name="app_opened">GuiaMed aberto. Um toque lê a embalagem. Dois toques leem a receita. Três toques cadastram alergia. Quatro toques repetem as instruções ou saem da função. Por voz, depois do sinal, diga a função desejada.</string>
+    <string name="reading_now">Lendo.</string>
+    <string name="reading_package">Lendo embalagem. Mantenha a caixa inteira centralizada e parada.</string>
+    <string name="allergy_mode">Fale o nome do medicamento que tem alergia. Se quiser usar a câmera, diga câmera. Depois, aponte a câmera para o medicamento.</string>
     <string name="allergy_registered">Alergia registrada com sucesso.</string>
     <string name="allergy_error">Erro ao registrar alergia. Tente novamente.</string>
     <string name="network_error">Sem conexão com o servidor, tentando novamente...</string>
@@ -14,9 +18,19 @@
     <string name="expired_medicine">Este medicamento está vencido.</string>
     <string name="allergy_alert">ALERTA DE ALERGIA: Você tem alergia a este medicamento.</string>
     <string name="camera_permission_rationale">O GuiaMed precisa da câmera para ler embalagens e receitas de remédios.</string>
-    <string name="audio_permission_rationale">O GuiaMed precisa do microfone para registrar alergias por voz.</string>
-    <string name="permission_request_camera">Vou pedir permissão para usar a câmera. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
-    <string name="permission_request_audio">Vou pedir permissão para usar o microfone. Quando o alerta do sistema aparecer, toque no botão Permitir no centro da tela.</string>
-    <string name="repeat_instructions">Um toque: ler embalagem. Dois toques: ler receita. Três toques: cadastrar alergia por voz. Quatro toques: repetir instruções.</string>
-    <string name="touch_instructions">1 toque: Ler | 2 toques: Receita\n3 toques: Alergia | 4 toques: Instruções</string>
+    <string name="audio_permission_rationale">O GuiaMed precisa do microfone para entender comandos e registrar alergias por voz.</string>
+    <string name="permission_request_camera">Quando a janela do Android aparecer, a posição dos botões pode variar. Não procure um ponto fixo. Se o TalkBack estiver ativo, deslize um dedo para a direita até ouvir Permitir e dê dois toques em qualquer lugar para confirmar. Se o TalkBack não estiver ativo, peça ajuda para ativar o leitor de tela ou localizar Permitir.</string>
+    <string name="permission_request_audio">Quando a janela do Android aparecer, a posição dos botões pode variar. Não procure um ponto fixo. Se o TalkBack estiver ativo, deslize um dedo para a direita até ouvir Permitir e dê dois toques em qualquer lugar para confirmar. Se o TalkBack não estiver ativo, peça ajuda para ativar o leitor de tela ou localizar Permitir.</string>
+    <string name="repeat_instructions">Instruções por voz: diga ler embalagem, ler receita, cadastrar alergia, instruções ou sair. Instruções por toques: um toque lê a embalagem. Dois toques leem a receita. Três toques cadastram alergia. Quatro toques encerram a função atual. Fora de uma função, quatro toques repetem estas instruções e abrem os comandos de voz.</string>
+    <string name="operation_exit_instruction">Para sair desta função, toque quatro vezes.</string>
+    <string name="voice_command_prompt">Diga uma função: ler embalagem, ler receita, cadastrar alergia, instruções ou sair.</string>
+    <string name="voice_command_examples">Você pode dizer ler embalagem, ler receita, cadastrar alergia, instruções ou sair.</string>
+    <string name="visual_alert_label">Atenção</string>
+    <string name="camera_preview_description">Prévia da câmera</string>
+    <string name="touch_instructions">1 toque  Embalagem   ·   2 toques  Receita\n3 toques  Alergia   ·   4 toques  Sair / Instruções</string>
+    <string name="accessibility_read_package">Ler embalagem</string>
+    <string name="accessibility_read_prescription">Ler receita</string>
+    <string name="accessibility_register_allergy">Cadastrar alergia</string>
+    <string name="accessibility_exit_or_help">Encerrar função ou ouvir instruções</string>
+    <string name="accessibility_open_settings">Abrir configurações</string>
 </resources>

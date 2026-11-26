@@ -44,7 +44,24 @@ imagens exige uma avaliação própria.
 
 ## Reproduzir
 
-Prepare o ambiente Python conforme o [guia da primeira rodada](../finetuning/README.md).
-Na raiz, execute `python scripts/run_llm_finetuning_v2.py`. O script usa a
-mesma revisão do SmolLM2, treina somente os parâmetros do adaptador em CPU e
-grava os dados, as métricas, as respostas e o adaptador selecionado nesta pasta.
+Neste PC, abra o PowerShell e use o ambiente e o cache já preparados:
+
+```powershell
+Set-Location 'C:\meu-sistema\GuiaMed'
+$env:HF_HOME = 'C:\meu-sistema\.tools\huggingface'
+& 'C:\meu-sistema\.tools\finetuning-venv\Scripts\python.exe' scripts/run_llm_finetuning_v2.py --output-dir models/meu-treino
+```
+
+O script começa a partir do adaptador da primeira rodada, ajusta os parâmetros
+LoRA na CPU e avalia as duas versões depois de escolher a época pela validação.
+O treino anterior levou cerca de seis minutos e meio, além da avaliação.
+Abra `models/meu-treino/treino.json` para acompanhar a perda por passo e o
+resultado de validação ao fim de cada época. Ao terminar, `metricas.json`
+compara as versões e `adapter/` contém os novos pesos. Use outra pasta de
+saída se quiser guardar os resultados de mais de uma execução.
+
+Em outro computador, crie um ambiente Python 3.12, instale as dependências de
+[`scripts/requirements-finetuning.txt`](../../../scripts/requirements-finetuning.txt)
+e execute `python scripts/run_llm_finetuning_v2.py --output-dir models/meu-treino`
+na raiz do projeto. O primeiro download dos pesos requer conexão. Treino e
+avaliação usam os dados fictícios e rodam localmente.

@@ -47,10 +47,6 @@ android {
         resources {
             excludes += "/META-INF/*"
         }
-        jniLibs {
-            pickFirsts += "lib/**/liblept.so"
-            pickFirsts += "lib/**/libtesseract.so"
-        }
     }
 }
 
@@ -77,6 +73,7 @@ dependencies {
 
     // ML Kit Text Recognition (built-in, zero dependência externa)
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     // Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

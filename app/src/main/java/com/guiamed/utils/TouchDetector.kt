@@ -41,7 +41,7 @@ class TouchDetector(
                 handler.removeCallbacks(longPressRunnable)
                 if (!longPressTriggered) handleTap()
             }
-            MotionEvent.ACTION_CANCEL -> handler.removeCallbacks(longPressRunnable)
+            MotionEvent.ACTION_CANCEL -> reset()
         }
         return true
     }

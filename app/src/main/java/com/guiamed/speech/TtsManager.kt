@@ -24,6 +24,7 @@ class TtsManager(context: Context) {
     private val appContext = context.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
     private val requestCounter = AtomicLong(0)
+    private val speechGeneration = AtomicLong(0)
     private var tts: TextToSpeech? = null
     @Volatile private var isInitialized = false
     @Volatile private var initializationFinished = false
@@ -60,7 +61,7 @@ class TtsManager(context: Context) {
 
     private fun configureTts() {
         tts?.apply {
-            setSpeechRate(0.9f)
+            setSpeechRate(1.0f)
             setPitch(1.0f)
             setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String) {
@@ -92,8 +93,9 @@ class TtsManager(context: Context) {
     }
 
     private fun completeRequest(requestId: String, success: Boolean) {
+        val generation = speechGeneration.get()
         val listener = synchronized(speakListeners) { speakListeners.remove(requestId) }
-        listener?.let { mainHandler.post { it(success) } }
+        listener?.let { mainHandler.post { it(success && generation == speechGeneration.get()) } }
     }
 
     fun speak(
@@ -103,8 +105,10 @@ class TtsManager(context: Context) {
     ): Boolean {
         if (!isInitialized || tts == null) {
             if (!initializationFinished) {
+                val generation = speechGeneration.get()
                 addInitializationListener { ready ->
-                    if (ready) speak(text, utteranceId, onComplete) else onComplete?.invoke(false)
+                    if (generation != speechGeneration.get()) onComplete?.invoke(false)
+                    else if (ready) speak(text, utteranceId, onComplete) else onComplete?.invoke(false)
                 }
                 return true
             }
@@ -129,7 +133,8 @@ class TtsManager(context: Context) {
         return true
     }
 
-    fun speakStartupMessage() = speak(appContext.getString(R.string.app_opened), UTTERANCE_ID_STARTUP)
+    fun speakStartupMessage(onComplete: ((Boolean) -> Unit)? = null) =
+        speak(appContext.getString(R.string.app_opened), UTTERANCE_ID_STARTUP, onComplete)
 
     fun speakReadingPackage() = speak(appContext.getString(R.string.reading_package), UTTERANCE_ID_READING)
 
@@ -138,6 +143,7 @@ class TtsManager(context: Context) {
     fun isSpeakingNow(): Boolean = speaking || tts?.isSpeaking == true
 
     fun stop() {
+        speechGeneration.incrementAndGet()
         tts?.stop()
         speaking = false
         val callbacks = synchronized(speakListeners) {

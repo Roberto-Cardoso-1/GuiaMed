@@ -42,7 +42,9 @@ data class ReceitaResponse(
     @SerializedName("medicamentos") val medicamentos: List<MedicamentoReceita>,
     @SerializedName("posologia_completa") val posologiaCompleta: String,
     @SerializedName("horarios") val horarios: List<String>,
-    @SerializedName("mensagem") val mensagem: String?
+    @SerializedName("mensagem") val mensagem: String?,
+    @Transient val textoOcrCompleto: String? = null,
+    @Transient val medicamentosComAlerta: List<String> = emptyList(),
 )
 
 data class MedicamentoReceita(

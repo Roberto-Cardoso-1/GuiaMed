@@ -38,6 +38,8 @@ Toda ação ou erro usa a tríade de acessibilidade: TTS em pt-BR, vibração e 
 
 O parser local normaliza erros comuns de OCR, faz busca aproximada de medicamentos na base DCB da Anvisa e é conservador: não inventa dosagem nem validade. Ele reconhece rótulos de validade como `VAL`, `VTO` e carimbos compactos de fundo de caixa, por exemplo `V02 28`; uma linha de fabricação, como `F02 26`, não é tratada como validade. As alergias ficam no armazenamento privado do app e continuam disponíveis depois de fechar ou reiniciar o aparelho.
 
+A leitura de caixas analisa os quadros mais recentes da CameraX por OCR e EAN-8/13. O índice EAN distribuído no APK deriva dos campos de produto e substância da [lista PMC publicada pela CMED/Anvisa em 09/11/2026](https://www.gov.br/anvisa/pt-br/assuntos/medicamentos/cmed/precos/arquivos/lista_pmc_20261109_111901662.xlsx/@@download/file). Foram excluídos códigos com dígito verificador inválido ou registros conflitantes. A validade e, quando há confirmação pelo OCR, a dosagem vêm do rótulo escaneado.
+
 ## Executar o backend opcional
 
 Use Python 3.11 ou 3.12:
@@ -49,7 +51,7 @@ Copy-Item .env.example .env
 python main.py
 ```
 
-O aplicativo não precisa desse backend para leitura, receitas, validade ou alergias. Ele é mantido para testes de integração com banco e auditoria. A documentação interativa fica em `http://127.0.0.1:8000/docs`.
+O aplicativo executa OCR, parser e checagem de alergias no próprio aparelho. O build de integração pode consultar o LoRA v2 no backend para recuperar nomes em leituras inconclusivas. O guia de [configuração do backend](backend/README.md) descreve o ambiente Python 3.12 para FP32 e o uso de GGUF. A documentação interativa fica em `http://127.0.0.1:8000/docs`.
 
 ## Compilar o Android
 
@@ -104,6 +106,8 @@ Use Python 3.12 em um ambiente virtual próprio e instale
 fixada do SmolLM2, mede o original, treina LoRA e mede o ajustado.
 Os [resultados preliminares](evidencias/ia/finetuning/README.md) incluem
 as respostas de teste, o histórico de treino e os hashes do adaptador.
+Para repetir a segunda rodada, use o
+[passo a passo de treino no PowerShell](evidencias/ia/finetuning_v2/README.md#reproduzir).
 
 ## Segurança e configuração
 

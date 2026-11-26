@@ -8,14 +8,16 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.guiamed.data.GuiaMedRepository
 import com.guiamed.data.ReceitaResponse
-import com.guiamed.ocr.TesseractOcrEngine
+import com.guiamed.ocr.MlKitOcrEngine
+import com.guiamed.ocr.readPrescription
 import com.guiamed.speech.TtsManager
+import com.guiamed.ui.ReadingPanel
+import com.guiamed.ui.toReadingPresentation
 import com.guiamed.utils.VibrationManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -25,10 +27,10 @@ import kotlinx.coroutines.withContext
 class PrescriptionReaderActivity : AppCompatActivity() {
 
     private lateinit var imageView: ImageView
-    private lateinit var statusText: TextView
+    private lateinit var readingPanel: ReadingPanel
     private lateinit var ttsManager: TtsManager
     private lateinit var vibrationManager: VibrationManager
-    private lateinit var ocrEngine: TesseractOcrEngine
+    private lateinit var ocrEngine: MlKitOcrEngine
     private lateinit var repository: GuiaMedRepository
     private val scope = CoroutineScope(Dispatchers.IO)
     private var sourceUri: Uri? = null
@@ -39,10 +41,10 @@ class PrescriptionReaderActivity : AppCompatActivity() {
         setContentView(R.layout.activity_prescription_reader)
 
         imageView = findViewById(R.id.prescriptionImage)
-        statusText = findViewById(R.id.statusText)
+        readingPanel = ReadingPanel(findViewById(R.id.readingPanel))
         ttsManager = TtsManager(this)
         vibrationManager = VibrationManager(this)
-        ocrEngine = TesseractOcrEngine(this)
+        ocrEngine = MlKitOcrEngine()
         repository = GuiaMedRepository()
 
         sourceUri = intent.getStringExtra("pdf_uri")?.let(Uri::parse)
@@ -52,7 +54,7 @@ class PrescriptionReaderActivity : AppCompatActivity() {
             return
         }
 
-        updateStatus(getString(R.string.reading_package), false)
+        readingPanel.show("Lendo receita compartilhada")
         vibrationManager.vibrateDoubleShort()
         ttsManager.speak("Lendo receita compartilhada.")
         loadAndProcess()
@@ -68,17 +70,16 @@ class PrescriptionReaderActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     imageView.setImageBitmap(bitmap)
-                    updateStatus("Processando receita", false)
+                    readingPanel.show("Processando receita")
                 }
                 check(ocrEngine.initialize()) { "Falha ao inicializar OCR" }
-                val ocrText = ocrEngine.recognizeTextFromBitmap(bitmap)
-                if (ocrText.isBlank()) throw IllegalStateException(getString(R.string.no_text_found))
-
-                val result = repository.lerReceita(this@PrescriptionReaderActivity, ocrText)
+                val result = ocrEngine.readPrescription(this@PrescriptionReaderActivity, repository, bitmap)
                 withContext(Dispatchers.Main) {
-                    result.onSuccess(::showPrescription)
-                        .onFailure { showError(it.message ?: getString(R.string.network_error)) }
+                    if (result == null) showError(getString(R.string.no_text_found))
+                    else showPrescription(result)
                 }
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 Log.e("GuiaMed", "Erro ao processar receita compartilhada", error)
                 withContext(Dispatchers.Main) {
@@ -116,34 +117,17 @@ class PrescriptionReaderActivity : AppCompatActivity() {
             showError(response.mensagem ?: "Nenhum medicamento foi identificado na receita.")
             return
         }
-        updateStatus("Receita lida", false)
-        vibrationManager.vibrateDoubleShort()
-        val speech = buildString {
-            append("Receita médica. ")
-            response.medicamentos.forEachIndexed { index, medicine ->
-                append("${index + 1}. ${medicine.nome}, ${medicine.dosagem}, ${medicine.frequencia}. ")
-                medicine.duracao?.let { append("Por $it. ") }
-                medicine.instrucoes?.let { append("$it. ") }
-            }
-            response.horarios.forEach { append("Horário $it. ") }
-        }
-        ttsManager.speak(speech, TtsManager.UTTERANCE_ID_READING)
+        val result = response.toReadingPresentation()
+        readingPanel.show(result)
+        if (result.alert != null) vibrationManager.vibrateAlert()
+        else vibrationManager.vibrateDoubleShort()
+        ttsManager.speak(result.speech, TtsManager.UTTERANCE_ID_READING)
     }
 
     private fun showError(message: String) {
-        updateStatus("Erro: $message", true)
+        readingPanel.show("Não foi possível ler a receita", message, getString(R.string.visual_alert_label))
         vibrationManager.vibrateTripleLong()
         ttsManager.speak(message, TtsManager.UTTERANCE_ID_ALERT)
-    }
-
-    private fun updateStatus(message: String, danger: Boolean) {
-        statusText.text = message
-        statusText.setBackgroundColor(
-            ContextCompat.getColor(this, if (danger) R.color.red_danger else R.color.black)
-        )
-        statusText.setTextColor(
-            ContextCompat.getColor(this, if (danger) R.color.white else R.color.yellow_high_contrast)
-        )
     }
 
     override fun onDestroy() {

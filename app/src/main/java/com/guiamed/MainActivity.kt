@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
@@ -25,16 +26,29 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.cancel
 import com.google.common.util.concurrent.ListenableFuture
 import com.guiamed.data.GuiaMedRepository
+import com.guiamed.data.ExpirationReader
 import com.guiamed.data.VerificarResponse
 import com.guiamed.data.ReceitaResponse
-import com.guiamed.ocr.TesseractOcrEngine
+import com.guiamed.data.withReadExpiration
+import com.guiamed.ocr.MlKitOcrEngine
+import com.guiamed.ocr.readPrescription
 import com.guiamed.speech.SpeechRecognitionManager
 import com.guiamed.speech.TtsManager
+import com.guiamed.speech.AllergyRegistrationInputType
+import com.guiamed.speech.AllergyRegistrationParser
+import com.guiamed.speech.ParsedVoiceCommand
+import com.guiamed.speech.VoiceCommandParser
+import com.guiamed.speech.VoiceCommandType
+import com.guiamed.ui.ReadingPanel
+import com.guiamed.ui.toReadingPresentation
 import com.guiamed.utils.PermissionAccessibilityHelper
 import com.guiamed.utils.TouchDetector
 import com.guiamed.utils.VibrationManager
@@ -44,14 +58,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -61,13 +80,11 @@ import kotlin.coroutines.resumeWithException
 class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.PermissionRequester {
 
     private lateinit var previewView: PreviewView
-    private lateinit var topPanel: View
-    private lateinit var statusText: android.widget.TextView
-    private lateinit var instructionText: android.widget.TextView
+    private lateinit var readingPanel: ReadingPanel
     private lateinit var rootLayout: androidx.constraintlayout.widget.ConstraintLayout
     private lateinit var ttsManager: TtsManager
     private lateinit var vibrationManager: VibrationManager
-    private lateinit var ocrEngine: TesseractOcrEngine
+    private lateinit var ocrEngine: MlKitOcrEngine
     private lateinit var speechRecognitionManager: SpeechRecognitionManager
     private lateinit var repository: GuiaMedRepository
     private lateinit var touchDetector: TouchDetector
@@ -85,16 +102,24 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private var hasAnnouncedStartup = false
     private var pendingSharedIntent: Intent? = null
     private var permissionFlowActive = false
-    private val maxPackageReadAttempts = 3
+    @Volatile private var packageFrameSession = 0L
+    private var nextPackageFrameSession = 0L
+    private val packageFrames = MutableSharedFlow<Pair<Long, MlKitOcrEngine.PackageFrame>>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+    private val maxPackageReadAttempts = 2
     private val maxValidityReadAttempts = 4
-    private var packageReadAttempt = 0
-    private var validityReadAttempt = 0
-    private var isScanningValidity = false
+    private var packageScanJob: Job? = null
     private var identifiedPackageResponse: VerificarResponse? = null
-    private val accumulatedPackageOcr = mutableListOf<String>()
     private val maxPrescriptionReadAttempts = 3
     private var prescriptionReadAttempt = 0
     private var prescriptionCaptureJob: Job? = null
+    private var allergyJob: Job? = null
+    private var voiceCommandJob: Job? = null
+    private var voiceCommandResumeJob: Job? = null
+    private var voiceCommandSessionId = 0L
+    private var resumeVoiceCommandsAfterOperation = false
     private val cameraScope = CoroutineScope(Dispatchers.IO)
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private lateinit var permissionHelper: PermissionAccessibilityHelper
@@ -118,10 +143,16 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         
         // Initialize views with viewBinding-like pattern
         previewView = findViewById(R.id.previewView)
-        topPanel = findViewById(R.id.topPanel)
-        statusText = findViewById(R.id.statusText)
-        instructionText = findViewById(R.id.instructionText)
+        readingPanel = ReadingPanel(findViewById(R.id.readingPanel))
         rootLayout = findViewById(R.id.rootLayout)
+
+        val framingGuide = findViewById<View>(R.id.framingGuide)
+        val cameraGuideLabel = findViewById<View>(R.id.cameraGuideLabel)
+        previewView.previewStreamState.observe(this) { state ->
+            val visibility = if (state == PreviewView.StreamState.STREAMING) View.VISIBLE else View.INVISIBLE
+            framingGuide.visibility = visibility
+            cameraGuideLabel.visibility = visibility
+        }
         
         // Inicializa componentes
         initializeComponents()
@@ -139,7 +170,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private fun initializeComponents() {
         ttsManager = TtsManager(this)
         vibrationManager = VibrationManager(this)
-        ocrEngine = TesseractOcrEngine(this)
+        ocrEngine = MlKitOcrEngine()
         speechRecognitionManager = SpeechRecognitionManager(this)
         repository = GuiaMedRepository()
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -183,7 +214,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             if (cameraGranted) startCamera()
 
             if (allGranted) {
-                updateStatus("Permissões concedidas", isDanger = false)
+                updateStatus("Permissões concedidas", isDanger = false, detail = "Iniciando câmera.")
                 vibrationManager.vibrateShort()
                 ttsManager.speak("Todas as permissões concedidas. Iniciando câmera.") {
                     continueAfterPermissions()
@@ -197,7 +228,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                     }
                 }
                 val message = "Permissões negadas: $denied. O app terá funcionalidades limitadas."
-                updateStatus(message, isDanger = true)
+                updateStatus("Permissões negadas", isDanger = true, detail = "Acesso limitado: $denied.")
                 vibrationManager.vibrateTripleLong()
                 ttsManager.speak(message) { continueAfterPermissions() }
             }
@@ -211,7 +242,9 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             else -> "Permissão necessária para o funcionamento do aplicativo."
         }
 
-        updateStatus(rationale, isDanger = false)
+        val permissionTitle = if (permission == Manifest.permission.CAMERA) "Permissão de câmera"
+        else "Permissão de microfone"
+        updateStatus(permissionTitle, isDanger = false, detail = rationale)
         vibrationManager.vibrateShort()
         permissionHelper.requestPermissionWithVoiceGuidance(permission, rationale) { granted ->
             permissionResults[permission] = granted
@@ -260,7 +293,8 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         imageCapture = ImageCapture.Builder()
             .setTargetRotation(previewView.display.rotation)
             .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setJpegQuality(95)
             .setFlashMode(ImageCapture.FLASH_MODE_OFF)
             .build()
 
@@ -268,9 +302,19 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             .setTargetRotation(previewView.display.rotation)
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
-            .also { it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luminosity ->
-                previewLuminosity = luminosity
-            }) }
+            .also { analysis ->
+                analysis.setAnalyzer(cameraExecutor) { proxy ->
+                    previewLuminosity = readPreviewLuminosity(proxy)
+                    val session = packageFrameSession
+                    if (session == 0L) {
+                        proxy.close()
+                    } else {
+                        ocrEngine.analyzePackageFrame(proxy) { frame ->
+                            if (packageFrameSession == session) packageFrames.tryEmit(session to frame)
+                        }
+                    }
+                }
+            }
 
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
@@ -291,7 +335,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             onSingleTap = { handleSingleTap() },
             onDoubleTap = { handleDoubleTap() },
             onTripleTap = { handleTripleTap() },
-            onQuadTap = { repeatInstructions() },
+            onQuadTap = { handleQuadTap() },
             onLongPress = { openAppSettings() }
         )
 
@@ -304,20 +348,85 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         rootLayout.setOnTouchListener { _, event ->
             touchDetector.onTouchEvent(event)
         }
+        readingPanel.content.setOnTouchListener { _, event ->
+            touchDetector.onTouchEvent(event)
+        }
+
+        val status = findViewById<View>(R.id.statusText)
+        val actions = listOf(
+            R.string.accessibility_read_package to ::handleSingleTap,
+            R.string.accessibility_read_prescription to ::handleDoubleTap,
+            R.string.accessibility_register_allergy to ::handleTripleTap,
+            R.string.accessibility_exit_or_help to ::handleQuadTap,
+        )
+        actions.forEach { (label, action) ->
+            ViewCompat.addAccessibilityAction(status, getString(label)) { _, _ ->
+                action()
+                true
+            }
+        }
+        ViewCompat.replaceAccessibilityAction(
+            status,
+            AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_LONG_CLICK,
+            getString(R.string.accessibility_open_settings),
+        ) { _, _ ->
+            openAppSettings()
+            true
+        }
     }
 
     private fun repeatInstructions() {
-        isProcessing = false
-        speechRecognitionManager.stopListening()
-        updateStatus("Instruções", isDanger = false)
-        ttsManager.speak(getString(R.string.repeat_instructions))
+        val instructions = getString(R.string.repeat_instructions)
+        updateStatus("Instruções", isDanger = false, detail = instructions)
+        ttsManager.speak(instructions) { success ->
+            if (success) startVoiceCommandSession(prompt = false)
+        }
         vibrationManager.vibrateShort()
     }
 
-    private fun openAppSettings() {
+    private fun handleQuadTap() {
+        if (permissionFlowActive) {
+            val message = "Conclua a solicitação de permissão do sistema."
+            updateStatus("Permissão em andamento", isDanger = false, detail = message)
+            vibrationManager.vibrateShort()
+            ttsManager.speak(message)
+            return
+        }
+        if (isProcessing) cancelCurrentOperation() else repeatInstructions()
+    }
+
+    private fun cancelCurrentOperation() {
+        interruptCurrentOperation()
+        val message = "Função encerrada. Depois do sinal, diga a próxima função."
+        updateStatus("Função encerrada", isDanger = false, detail = message)
+        vibrationManager.vibrateShort()
+        ttsManager.speak(message) { success ->
+            if (success) startVoiceCommandSession(prompt = false)
+        }
+    }
+
+    private fun interruptCurrentOperation() {
+        resumeVoiceCommandsAfterOperation = false
+        cancelVoiceCommandSession()
+        resetPackageReadSession()
+        resetPrescriptionReadSession()
+        cancelAllergyRegistration()
+        stopScanLighting()
+        ttsManager.stop()
         isProcessing = false
-        speechRecognitionManager.stopListening()
-        updateStatus("Abrindo configurações", isDanger = false)
+    }
+
+    private fun withExitInstruction(message: String): String =
+        "$message ${getString(R.string.operation_exit_instruction)}"
+
+    private fun openAppSettings() {
+        resumeVoiceCommandsAfterOperation = false
+        cancelVoiceCommandSession()
+        resetPackageReadSession()
+        resetPrescriptionReadSession()
+        cancelAllergyRegistration()
+        isProcessing = false
+        updateStatus("Abrindo configurações", isDanger = false, detail = "Aqui você pode ativar as permissões.")
         vibrationManager.vibrateDoubleShort()
         ttsManager.speak("Abrindo configurações do aplicativo. Aqui você pode ativar as permissões necessárias.")
         val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -344,58 +453,66 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     }
 
     private fun handleSingleTap() {
-        if (isProcessing && isScanningValidity) {
+        if (permissionFlowActive) return
+        if (isProcessing && identifiedPackageResponse != null) {
             finishPackageWithoutValidity()
             return
         }
-        if (isProcessing || permissionFlowActive) return
+        interruptCurrentOperation()
         isProcessing = true
         resetPackageReadSession()
         startScanLighting()
         
         vibrationManager.vibrateShort()
-        updateStatus("Focando embalagem...", isDanger = false)
-        ttsManager.speakReadingPackage()
-        focusCameraThen {
-            updateStatus(getString(R.string.reading_package), isDanger = false)
-            captureAndProcessImage()
-        }
+        updateStatus("Lendo embalagem", isDanger = false)
+        ttsManager.speak(getString(R.string.reading_now))
+        packageScanJob = mainScope.launch { scanPackage() }
     }
 
     private fun handleDoubleTap() {
-        if (isProcessing || permissionFlowActive) return
+        if (permissionFlowActive) return
+        interruptCurrentOperation()
         isProcessing = true
         resetPrescriptionReadSession()
         startScanLighting()
         
         vibrationManager.vibrateDoubleShort()
         updateStatus("Modo receita", isDanger = false)
-        guideAndCapturePrescription(getString(R.string.prescription_mode))
+        guideAndCapturePrescription(withExitInstruction(getString(R.string.prescription_mode)))
     }
 
     private fun guideAndCapturePrescription(message: String) {
-        ttsManager.speak(message, TtsManager.UTTERANCE_ID_DEFAULT) { spoken ->
-            mainScope.launch {
-                if (!spoken) kotlinx.coroutines.delay(2500)
-                if (isProcessing && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-                    focusCameraThen {
-                        if (isProcessing && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
-                            updateStatus("Capturando receita...", isDanger = false)
-                            capturePrescriptionPhoto()
-                        }
-                    }
-                }
-            }
+        prescriptionCaptureJob = mainScope.launch {
+            awaitScanInstruction(message)
+            awaitScanFocus()
+            updateStatus("Capturando receita...", isDanger = false)
+            vibrationManager.vibrateDoubleShort()
+            ttsManager.speak(getString(R.string.reading_now))
+            capturePrescriptionPhoto()
         }
     }
 
-    private fun focusCameraThen(onReady: () -> Unit) {
+    private suspend fun awaitScanInstruction(message: String) {
+        if (!awaitInstruction(message)) delay(1_500)
+    }
+
+    private suspend fun awaitInstruction(message: String): Boolean {
+        readingPanel.showDetails(message)
+        val spoken = withTimeoutOrNull(10_000) {
+            suspendCancellableCoroutine<Boolean> { continuation ->
+                ttsManager.speak(message) { success ->
+                    if (continuation.isActive) continuation.resume(success)
+                }
+            }
+        }
+        if (spoken == null) ttsManager.stop()
+        return spoken == true
+    }
+
+    private suspend fun awaitScanFocus(maxWaitMillis: Long = 2_500L) {
         val activeCamera = camera
         if (activeCamera == null || previewView.width == 0 || previewView.height == 0) {
-            mainScope.launch {
-                kotlinx.coroutines.delay(350)
-                onReady()
-            }
+            delay(350)
             return
         }
 
@@ -410,18 +527,26 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             .setAutoCancelDuration(3, TimeUnit.SECONDS)
             .build()
 
-        val focusFuture = activeCamera.cameraControl.startFocusAndMetering(action)
-        focusFuture.addListener({
-            mainScope.launch {
-                // Evita que o toque para capturar produza uma foto ainda em movimento.
-                kotlinx.coroutines.delay(300)
-                onReady()
+        val focusFuture = runCatching { activeCamera.cameraControl.startFocusAndMetering(action) }
+            .getOrNull()
+        if (focusFuture == null) {
+            delay(350)
+            return
+        }
+        withTimeoutOrNull(maxWaitMillis) {
+            suspendCancellableCoroutine<Unit> { continuation ->
+                focusFuture.addListener({
+                    if (continuation.isActive) continuation.resume(Unit)
+                }, ContextCompat.getMainExecutor(this@MainActivity))
             }
-        }, ContextCompat.getMainExecutor(this))
+        }
+        // Pausa curta para a exposição estabilizar sem tornar a leitura lenta.
+        delay(120)
     }
 
     private fun handleTripleTap() {
-        if (isProcessing || permissionFlowActive) return
+        if (permissionFlowActive) return
+        interruptCurrentOperation()
         isProcessing = true
         
         vibrationManager.vibrateDoubleShort()
@@ -429,145 +554,137 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         startAllergyVoiceRegistration()
     }
 
-    private fun captureAndProcessImage() {
-        val imageCapture = this.imageCapture ?: run {
-            handleProcessingError("A câmera ainda não está pronta. Tente novamente em alguns segundos.")
-            return
+    private suspend fun scanPackage() {
+        val startedAt = SystemClock.elapsedRealtime()
+        try {
+            val liveResult = readLivePackage()
+            if (liveResult != null) {
+                Log.d("GuiaMedScan", "Embalagem identificada por quadro em ${SystemClock.elapsedRealtime() - startedAt} ms")
+                finishPackageIdentification(liveResult)
+                return
+            }
+            Log.d("GuiaMedScan", "Leitura de embalagem por foto")
+            updateStatus(getString(R.string.reading_package), isDanger = false)
+            for (attempt in 1..maxPackageReadAttempts) {
+                if (attempt > 1) {
+                    updateStatus("Ajustando foco — $attempt de $maxPackageReadAttempts", isDanger = false)
+                    vibrationManager.vibrateShort()
+                    awaitScanInstruction("Mantenha a embalagem inteira dentro da moldura e fique parado.")
+                }
+                awaitScanFocus(maxWaitMillis = 1_200L)
+                updateStatus(getString(R.string.reading_package), isDanger = false)
+                val result = readPackageFrame(::identifyPackageFromBitmap)
+                if (isIdentifiedMedication(result) || result?.perigo == true) {
+                    Log.d("GuiaMedScan", "Resultado de embalagem por foto em ${SystemClock.elapsedRealtime() - startedAt} ms")
+                    finishPackageIdentification(requireNotNull(result))
+                    return
+                }
+            }
+            handleProcessingError("Não consegui identificar o medicamento com segurança.")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("GuiaMed", "Falha ao ler embalagem", e)
+            handleProcessingError(getString(R.string.ocr_error))
         }
-        if (isScanningValidity) {
-            validityReadAttempt += 1
+    }
+
+    private suspend fun readLivePackage(): VerificarResponse? = coroutineScope {
+        val session = ++nextPackageFrameSession
+        val focus = launch { awaitScanFocus(maxWaitMillis = 1_200L) }
+        packageFrameSession = session
+        try {
+            withTimeoutOrNull(1_800) {
+                var lastFrame: MlKitOcrEngine.PackageFrame? = null
+                packageFrames.mapNotNull { (frameSession, frame) ->
+                    if (frameSession != session || frame == lastFrame ||
+                        (frame.text.isBlank() && frame.ean == null)
+                    ) return@mapNotNull null
+                    lastFrame = frame
+                    repository.verificarLocal(this@MainActivity, frame.text, frame.ean, allowFuzzy = false)
+                        .takeIf { isIdentifiedMedication(it) || it.perigo }
+                }.first()
+            }
+        } finally {
+            if (packageFrameSession == session) packageFrameSession = 0
+            focus.cancel()
+        }
+    }
+
+    private suspend fun identifyPackageFromBitmap(bitmap: Bitmap): VerificarResponse? {
+        val focusedText = ocrEngine.recognizeFocusedPackageText(bitmap)
+        val focusedResult = focusedText.takeIf(String::isNotBlank)?.let {
+            repository.verificarLocal(this, it)
+        }
+        if (isIdentifiedMedication(focusedResult) || focusedResult?.perigo == true) return focusedResult
+
+        val fullText = ocrEngine.recognizeFullPackageText(bitmap)
+        val candidate = fullText.ifBlank { focusedText }
+        return candidate.takeIf(String::isNotBlank)
+            ?.let { repository.verificarMedicamento(this, it).getOrThrow() }
+    }
+
+    private fun isIdentifiedMedication(response: VerificarResponse?): Boolean =
+        response != null && !response.nome.startsWith("Medicamento não identificado")
+
+    private suspend fun finishPackageIdentification(response: VerificarResponse) {
+        if (response.validade != null || response.perigo || response.alertaAlergia) {
+            handleVerificarSuccess(response)
         } else {
-            packageReadAttempt += 1
-        }
-        
-        val outputFile = createImageFile()
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
-        
-        imageCapture.takePicture(
-            outputOptions,
-            cameraExecutor,
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    processSavedImage(outputFile)
-                }
-                override fun onError(exc: ImageCaptureException) {
-                    Log.e("GuiaMed", "Erro ao capturar imagem", exc)
-                    runOnUiThread {
-                        handleProcessingError(getString(R.string.ocr_error))
-                    }
-                }
-            }
-        )
-    }
-
-    private fun createImageFile(): File {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(System.currentTimeMillis())
-        return File(cacheDir, "IMG_${timestamp}.jpg")
-    }
-
-    private fun processSavedImage(file: File) {
-        cameraScope.launch {
-            try {
-                val bitmap = decodeBitmapRespectingExif(file)
-                if (bitmap == null) {
-                    runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
-                    return@launch
-                }
-
-                val textoOcr = ocrEngine.recognizeTextFromBitmap(bitmap)
-                bitmap.recycle()
-
-                if (textoOcr.isBlank()) {
-                    runOnUiThread {
-                        if (isScanningValidity) {
-                            continueValidityScanOrFinish()
-                        } else {
-                            retryPackageReadOrFinish(getString(R.string.no_text_found))
-                        }
-                    }
-                    return@launch
-                }
-
-                if (textoOcr !in accumulatedPackageOcr) {
-                    accumulatedPackageOcr.add(textoOcr)
-                }
-                val combinedOcr = accumulatedPackageOcr.joinToString("\n")
-
-                // Envia para API
-                val result = repository.verificarMedicamento(this@MainActivity, combinedOcr)
-                
-                runOnUiThread {
-                    result.onSuccess { response ->
-                        val identified = !response.nome.startsWith("Medicamento não identificado")
-                        if (identified && response.validade != null) {
-                            handleVerificarSuccess(response)
-                        } else if (identified && !isScanningValidity) {
-                            startValidityScan(response)
-                        } else if (isScanningValidity) {
-                            if (identified) identifiedPackageResponse = response
-                            continueValidityScanOrFinish()
-                        } else {
-                            retryPackageReadOrFinish(response.mensagem ?: getString(R.string.no_text_found), response)
-                        }
-                    }.onFailure { e ->
-                        handleProcessingError(e.message ?: getString(R.string.network_error))
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("GuiaMed", "Erro no processamento", e)
-                runOnUiThread { handleProcessingError(getString(R.string.network_error)) }
-            } finally {
-                file.delete()
-            }
+            scanValidity(response)
         }
     }
 
-    private fun startValidityScan(response: VerificarResponse) {
+    private suspend fun scanValidity(response: VerificarResponse) {
         identifiedPackageResponse = response
-        isScanningValidity = true
-        validityReadAttempt = 0
-        updateStatus("${response.nome} — vire se quiser a validade", isDanger = false)
+        updateStatus("${response.nome}\nVire para ler a validade", isDanger = false)
         vibrationManager.vibrateDoubleShort()
-        ttsManager.speak(
-            "${response.nome} identificado. Se quiser procurar a validade, vire lentamente a embalagem e mantenha parado. Se não quiser, toque uma vez para encerrar.",
-            TtsManager.UTTERANCE_ID_DEFAULT,
-        ) { spoken ->
-            if (spoken && isProcessing && isScanningValidity) {
-                mainScope.launch {
-                    kotlinx.coroutines.delay(600)
-                    focusCameraThen {
-                        updateStatus("Procurando validade — tentativa 1 de $maxValidityReadAttempts", isDanger = false)
-                        captureAndProcessImage()
+        awaitScanInstruction("${response.nome}. Vire a mesma embalagem para mostrar a validade. Um toque encerra a busca.")
+
+        for (attempt in 1..maxValidityReadAttempts) {
+            updateStatus("Procurando validade — $attempt de $maxValidityReadAttempts", isDanger = false)
+            vibrationManager.vibrateShort()
+            if (attempt > 1) awaitScanInstruction("Mostre o lado com a data e mantenha parado.")
+            awaitScanFocus(maxWaitMillis = 1_500L)
+            val dates = readPackageFrame { bitmap ->
+                val original = ocrEngine.recognizeDocumentTextFromBitmap(bitmap)
+                val contrast = withTimeoutOrNull(3_500) {
+                    ocrEngine.recognizeDocumentTextFromBitmap(bitmap, highContrast = true)
+                }.orEmpty()
+                ExpirationReader.findDates(original) + ExpirationReader.findDates(contrast)
+            }.orEmpty()
+            val expiration = dates.singleOrNull()
+            if (expiration != null) {
+                handleVerificarSuccess(response.withReadExpiration(expiration))
+                return
+            }
+        }
+        handleVerificarSuccess(response)
+    }
+
+    private suspend fun <T> readPackageFrame(
+        read: suspend (Bitmap) -> T,
+    ): T? {
+        val capture = imageCapture ?: error("A câmera ainda não está pronta")
+        val file = File(cacheDir, "embalagem-${java.util.UUID.randomUUID()}.jpg")
+        try {
+            return withTimeoutOrNull(7_000) {
+                saveScanPhoto(capture, file)
+                withContext(Dispatchers.IO) {
+                    val bitmap = decodeBitmapRespectingExif(file) ?: return@withContext null
+                    var processingFinished = false
+                    try {
+                        read(bitmap).also { processingFinished = true }
+                    } finally {
+                        if (processingFinished && !bitmap.isRecycled) bitmap.recycle()
                     }
                 }
             }
-        }
-    }
-
-    private fun continueValidityScanOrFinish() {
-        val identifiedResponse = identifiedPackageResponse
-        if (validityReadAttempt >= maxValidityReadAttempts) {
-            if (identifiedResponse != null) {
-                handleVerificarSuccess(identifiedResponse)
-            } else {
-                handleProcessingError("Não consegui identificar o medicamento com segurança.")
-            }
-            return
-        }
-
-        val nextAttempt = validityReadAttempt + 1
-        updateStatus("Procurando validade — tentativa $nextAttempt de $maxValidityReadAttempts", isDanger = false)
-        vibrationManager.vibrateShort()
-        ttsManager.speak(
-            "Procurando a validade. Mova um pouco e pare novamente.",
-            TtsManager.UTTERANCE_ID_DEFAULT,
-        ) { spoken ->
-            if (spoken && isProcessing && isScanningValidity) {
-                mainScope.launch {
-                    kotlinx.coroutines.delay(450)
-                    focusCameraThen { captureAndProcessImage() }
-                }
-            }
+        } catch (e: ImageCaptureException) {
+            Log.w("GuiaMed", "Falha na captura da embalagem", e)
+            return null
+        } finally {
+            file.delete()
         }
     }
 
@@ -577,36 +694,13 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             ?.replace("Validade não encontrada na imagem.", "")
             ?.trim()
             ?.ifBlank { null }
-        handleVerificarSuccess(response.copy(mensagem = cleanedMessage))
-    }
-
-    private fun retryPackageReadOrFinish(message: String, finalResponse: VerificarResponse? = null) {
-        if (packageReadAttempt >= maxPackageReadAttempts) {
-            if (finalResponse != null) {
-                handleVerificarSuccess(finalResponse)
-            } else {
-                handleProcessingError(message)
-            }
-            return
-        }
-
-        val nextAttempt = packageReadAttempt + 1
-        val retryMessage = "Não ficou nítido. Ajustando foco, tentativa $nextAttempt de $maxPackageReadAttempts."
-        updateStatus("Ajustando foco — tentativa $nextAttempt de $maxPackageReadAttempts", isDanger = false)
-        vibrationManager.vibrateShort()
-        ttsManager.speak(retryMessage)
-        focusCameraThen {
-            updateStatus(getString(R.string.reading_package), isDanger = false)
-            captureAndProcessImage()
-        }
+        handleVerificarSuccess(response.copy(mensagem = cleanedMessage), showMissingValidity = false)
     }
 
     private fun resetPackageReadSession() {
-        packageReadAttempt = 0
-        validityReadAttempt = 0
-        isScanningValidity = false
+        packageScanJob?.cancel()
+        packageScanJob = null
         identifiedPackageResponse = null
-        accumulatedPackageOcr.clear()
     }
 
     private fun decodeBitmapRespectingExif(file: File): Bitmap? {
@@ -633,44 +727,27 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             }
     }
 
-    private fun handleVerificarSuccess(response: VerificarResponse) {
+    private fun handleVerificarSuccess(response: VerificarResponse, showMissingValidity: Boolean = true) {
         isProcessing = false
         resetPackageReadSession()
-        
-        val builder = StringBuilder()
-        builder.append("Medicamento: ${response.nome}")
-        response.miligramas?.let { builder.append(", ${it}") }
-        response.validade?.let { builder.append(", Validade: $it") }
-        response.posologia?.let { builder.append(". Posologia: $it") }
-        response.mensagem?.let { builder.append(". $it") }
-        
-        var speechText = builder.toString()
-        
-        if (response.perigo || response.vencido || response.alertaAlergia) {
-            updateStatus(response.nome, isDanger = true)
-            
-            if (response.alertaAlergia) {
-                speechText = "${getString(R.string.allergy_alert)} $speechText"
-                vibrationManager.vibrateAlert()
-            } else if (response.vencido) {
-                speechText = "${getString(R.string.expired_medicine)} $speechText"
-                vibrationManager.vibrateAlert()
-            } else {
-                vibrationManager.vibrateTripleLong()
-            }
-        } else {
-            updateStatus(response.nome, isDanger = false)
-            vibrationManager.vibrateShort()
+        val result = response.toReadingPresentation(showMissingValidity)
+        readingPanel.show(result)
+        when {
+            response.alertaAlergia || response.vencido -> vibrationManager.vibrateAlert()
+            response.perigo -> vibrationManager.vibrateTripleLong()
+            else -> vibrationManager.vibrateShort()
         }
-        ttsManager.speak(speechText, TtsManager.UTTERANCE_ID_READING)
+        ttsManager.speak(result.speech, TtsManager.UTTERANCE_ID_READING) { success ->
+            returnToVoiceCommandsAfterSpeech(success)
+        }
     }
 
     private fun handleProcessingError(message: String) {
         isProcessing = false
         resetPackageReadSession()
         resetPrescriptionReadSession()
-        updateStatus("Erro: $message", isDanger = true)
-        ttsManager.speak(message)
+        updateStatus("Não foi possível concluir", isDanger = true, detail = message)
+        ttsManager.speak(message) { success -> returnToVoiceCommandsAfterSpeech(success) }
         vibrationManager.vibrateTripleLong()
     }
 
@@ -683,11 +760,13 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         prescriptionCaptureJob = mainScope.launch {
             val file = File(cacheDir, "receita-${java.util.UUID.randomUUID()}.jpg")
             try {
-                withTimeout(6_000) { savePrescriptionPhoto(imageCapture, file) }
+                val startedAt = SystemClock.elapsedRealtime()
+                withTimeout(6_000) { saveScanPhoto(imageCapture, file) }
                 updateStatus("Lendo texto da receita…", isDanger = false)
-                val response = withTimeout(10_000) {
+                val response = withTimeout(18_000) {
                     withContext(Dispatchers.IO) { readPrescriptionPhoto(file) }
                 }
+                Log.d("GuiaMedScan", "Receita processada em ${SystemClock.elapsedRealtime() - startedAt} ms")
                 if (response != null && response.medicamentos.isNotEmpty()) {
                     handlePrescriptionSuccess(response)
                 } else {
@@ -706,7 +785,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         }
     }
 
-    private suspend fun savePrescriptionPhoto(capture: ImageCapture, file: File) {
+    private suspend fun saveScanPhoto(capture: ImageCapture, file: File) {
         suspendCancellableCoroutine<Unit> { continuation ->
             capture.takePicture(
                 ImageCapture.OutputFileOptions.Builder(file).build(),
@@ -750,20 +829,24 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     }
 
     private fun processImageUri(uri: Uri) {
-        cameraScope.launch {
+        prescriptionCaptureJob = mainScope.launch {
             try {
-                val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-                val textoOcr = ocrEngine.recognizeDocumentTextFromBitmap(bitmap)
-                bitmap.recycle()
-                
-                if (textoOcr.isBlank()) {
-                    runOnUiThread { handleProcessingError(getString(R.string.no_text_found)) }
-                    return@launch
+                val response = withContext(Dispatchers.IO) {
+                    val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                    try {
+                        withTimeout(16_000) { readPrescriptionBitmap(bitmap) }
+                    } finally {
+                        if (currentCoroutineContext().isActive) bitmap.recycle()
+                    }
                 }
-                
-                processSharedPrescriptionText(textoOcr)
+                if (response == null) handleProcessingError(getString(R.string.no_text_found))
+                else handlePrescriptionSuccess(response)
+            } catch (e: TimeoutCancellationException) {
+                handleProcessingError("A leitura da receita demorou demais. Tente outra foto.")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                runOnUiThread { handleProcessingError(getString(R.string.ocr_error)) }
+                handleProcessingError(getString(R.string.ocr_error))
             }
         }
     }
@@ -780,41 +863,14 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     private suspend fun readPrescriptionPhoto(file: File): ReceitaResponse? {
         val bitmap = decodeBitmapRespectingExif(file) ?: error("Imagem inválida")
         try {
-            var originalText = ""
-            var originalResponse: ReceitaResponse? = null
-            val text = ocrEngine.recognizeDocumentTextFromBitmap(bitmap) { original ->
-                originalText = original
-                if (original.isNotBlank()) {
-                    originalResponse = repository.lerReceita(this, original).getOrThrow()
-                }
-                originalResponse?.let(::prescriptionNeedsRetry) ?: true
-            }
-            if (text.isBlank() || text == originalText) return originalResponse
-            val enhancedResponse = repository.lerReceita(this, text).getOrThrow()
-            return if (enhancedResponse.medicamentos.isNotEmpty()) enhancedResponse else originalResponse
+            return readPrescriptionBitmap(bitmap)
         } finally {
             if (currentCoroutineContext().isActive) bitmap.recycle()
         }
     }
 
-    private fun processSharedPrescriptionText(text: String) {
-        mainScope.launch {
-            try {
-                handlePrescriptionSuccess(repository.lerReceita(this@MainActivity, text).getOrThrow())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                handleProcessingError(getString(R.string.ocr_error))
-            }
-        }
-    }
-
-    private fun prescriptionNeedsRetry(response: ReceitaResponse): Boolean {
-        return response.medicamentos.isEmpty() || response.medicamentos.any { medicine ->
-            medicine.dosagem.contains("não identificada", ignoreCase = true) ||
-                medicine.frequencia.contains("não identificada", ignoreCase = true)
-        }
-    }
+    private suspend fun readPrescriptionBitmap(bitmap: Bitmap): ReceitaResponse? =
+        ocrEngine.readPrescription(this, repository, bitmap)
 
     private fun retryPrescriptionReadOrFinish(message: String) {
         if (prescriptionReadAttempt >= maxPrescriptionReadAttempts) {
@@ -823,7 +879,7 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         }
 
         val nextAttempt = prescriptionReadAttempt + 1
-        val retryMessage = "Aproxime a receita e fique parado."
+        val retryMessage = "Mantenha a receita inteira no enquadramento e fique parado."
         updateStatus("Ajustando receita — tentativa $nextAttempt de $maxPrescriptionReadAttempts", isDanger = false)
         vibrationManager.vibrateDoubleShort()
         guideAndCapturePrescription(retryMessage)
@@ -842,52 +898,62 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             handleProcessingError(response.mensagem ?: "Nenhum medicamento foi identificado na receita.")
             return
         }
-        updateStatus("Receita lida", isDanger = false)
-        
-        var speechText = "Receita médica: "
-        response.medicamentos.forEachIndexed { index, med ->
-            speechText += "${index + 1}. ${med.nome} ${med.dosagem}, ${med.frequencia}"
-            med.duracao?.let { speechText += " por $it" }
-            med.instrucoes?.let { speechText += ". $it" }
-            speechText += ". "
+        val result = response.toReadingPresentation()
+        readingPanel.show(result)
+        ttsManager.speak(result.speech, TtsManager.UTTERANCE_ID_READING) { success ->
+            returnToVoiceCommandsAfterSpeech(success)
         }
-        response.horarios.forEach { speechText += "Horário: $it. " }
-        if (response.mensagem?.contains("confirme", ignoreCase = true) == true) {
-            speechText += response.mensagem
-        }
-        
-        ttsManager.speak(speechText, TtsManager.UTTERANCE_ID_READING)
-        vibrationManager.vibrateDoubleShort()
+        if (result.alert != null) vibrationManager.vibrateAlert()
+        else vibrationManager.vibrateDoubleShort()
     }
 
-    private fun startAllergyVoiceRegistration() {
-        ttsManager.speak(getString(R.string.allergy_mode), TtsManager.UTTERANCE_ID_DEFAULT) { success ->
-            if (success) {
-                launchRecognition()
-            } else {
-                handleProcessingError("Não foi possível preparar o cadastro por voz.")
-            }
-        }
-    }
-
-    private fun launchRecognition() {
-        val deferred = speechRecognitionManager.startListening {
-            updateStatus("Pode falar agora", isDanger = false)
-            vibrationManager.vibrateDoubleShort()
-        }
-        mainScope.launch {
+    private fun startAllergyVoiceRegistration(initialAllergyName: String? = null) {
+        allergyJob = mainScope.launch {
+            val owner = currentCoroutineContext()[Job]
             try {
-                val recognizedText = withTimeout(20_000L) { deferred.await() }
+                val recognizedText = initialAllergyName ?: run {
+                    if (!awaitInstruction(withExitInstruction(getString(R.string.allergy_mode))) || ttsManager.isSpeakingNow()) {
+                        handleProcessingError("Não foi possível preparar o cadastro por voz.")
+                        return@launch
+                    }
+                    val deferred = speechRecognitionManager.startListening(
+                        noMatchMessage = "Não entendi o nome da alergia",
+                    ) {
+                        updateStatus("Pode falar agora", isDanger = false)
+                        vibrationManager.vibrateDoubleShort()
+                    }
+                    withTimeout(20_000L) { deferred.await() }
+                }
                 if (recognizedText.isBlank()) {
                     handleProcessingError("Não entendi. Tente novamente.")
                     return@launch
                 }
+                val allergyInput = AllergyRegistrationParser.parse(recognizedText)
+                if (allergyInput.type == AllergyRegistrationInputType.CANCEL) {
+                    announceAllergyCancellation()
+                    return@launch
+                }
+                val allergyName = when (allergyInput.type) {
+                    AllergyRegistrationInputType.CAMERA -> scanAllergyMedicationName()
+                    AllergyRegistrationInputType.MEDICATION_NAME -> allergyInput.medicationName
+                    else -> null
+                }
+                if (allergyName.isNullOrBlank()) {
+                    handleProcessingError("Não consegui identificar o medicamento para cadastrar a alergia.")
+                    return@launch
+                }
+                if (!confirmAllergyRegistration(allergyName)) {
+                    announceAllergyCancellation()
+                    return@launch
+                }
                 updateStatus("Registrando alergia", isDanger = false)
-                val result = repository.registrarAlergia(this@MainActivity, recognizedText)
+                val result = repository.registrarAlergia(this@MainActivity, allergyName)
                 result.onSuccess { response ->
                     if (response.sucesso) {
-                        updateStatus("Alergia registrada", isDanger = false)
-                        ttsManager.speak(response.mensagem)
+                        updateStatus("Alergia registrada", isDanger = false, detail = response.mensagem)
+                        ttsManager.speak(response.mensagem) { success ->
+                            returnToVoiceCommandsAfterSpeech(success)
+                        }
                         vibrationManager.vibrateDoubleShort()
                     } else {
                         handleProcessingError(response.mensagem)
@@ -895,12 +961,223 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
                 }.onFailure { error ->
                     handleProcessingError(error.message ?: getString(R.string.allergy_error))
                 }
+            } catch (_: TimeoutCancellationException) {
+                handleProcessingError("Tempo esgotado para o cadastro por voz. Tente novamente.")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 handleProcessingError(e.message ?: getString(R.string.allergy_error))
             } finally {
-                speechRecognitionManager.stopListening()
-                isProcessing = false
+                if (allergyJob == owner) {
+                    allergyJob = null
+                    speechRecognitionManager.stopListening()
+                    isProcessing = false
+                }
             }
+        }
+    }
+
+    private suspend fun scanAllergyMedicationName(): String? {
+        startScanLighting()
+        return try {
+            val guidance = "Aponte a câmera para o medicamento e mantenha a embalagem inteira centralizada e parada."
+            updateStatus("Escaneando alergia", isDanger = false, detail = guidance)
+            vibrationManager.vibrateShort()
+            if (!awaitInstruction(guidance)) return null
+
+            repeat(2) { attempt ->
+                awaitScanFocus(maxWaitMillis = 1_200L)
+                val response = readLivePackage() ?: readPackageFrame(::identifyPackageFromBitmap)
+                if (isIdentifiedMedication(response)) {
+                    return requireNotNull(response).nome
+                }
+                if (attempt == 0) {
+                    awaitScanInstruction("Não identifiquei. Mantenha a caixa centralizada e parada para tentar novamente.")
+                }
+            }
+            null
+        } finally {
+            stopScanLighting()
+        }
+    }
+
+    private suspend fun confirmAllergyRegistration(allergyName: String): Boolean {
+        val confirmation = "Identifiquei $allergyName. Confirma alergia a este medicamento? Diga confirmar ou cancelar."
+        updateStatus("Confirmar alergia", isDanger = false, detail = confirmation)
+        vibrationManager.vibrateDoubleShort()
+        if (!awaitInstruction(confirmation) || ttsManager.isSpeakingNow()) return false
+
+        val deferred = speechRecognitionManager.startListening(
+            noMatchMessage = "Não entendi a confirmação",
+        ) {
+            updateStatus("Pode confirmar agora", isDanger = false)
+            vibrationManager.vibrateDoubleShort()
+        }
+        val answer = withTimeout(15_000L) { deferred.await() }
+        return AllergyRegistrationParser.parse(answer).type == AllergyRegistrationInputType.CONFIRM
+    }
+
+    private fun announceAllergyCancellation() {
+        resumeVoiceCommandsAfterOperation = false
+        isProcessing = false
+        val message = "Cadastro de alergia cancelado."
+        updateStatus("Cadastro cancelado", isDanger = false, detail = message)
+        vibrationManager.vibrateShort()
+        ttsManager.speak(message)
+    }
+
+    private fun cancelAllergyRegistration() {
+        val pending = allergyJob
+        allergyJob = null
+        pending?.cancel()
+        speechRecognitionManager.stopListening()
+    }
+
+    private fun startVoiceCommandSession(prompt: Boolean, retryOnUnknown: Boolean = true) {
+        if (permissionFlowActive || isProcessing || voiceCommandJob?.isActive == true) return
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            val message = "Comandos de voz indisponíveis sem a permissão de microfone. Os gestos continuam funcionando."
+            updateStatus("Comandos de voz indisponíveis", isDanger = false, detail = message)
+            vibrationManager.vibrateShort()
+            ttsManager.speak(message)
+            return
+        }
+
+        val sessionId = ++voiceCommandSessionId
+        isProcessing = true
+        voiceCommandJob = mainScope.launch {
+            val owner = currentCoroutineContext()[Job]
+            var commandDispatched = false
+            try {
+                if (prompt) {
+                    updateStatus("Comandos por voz", isDanger = false, detail = getString(R.string.voice_command_prompt))
+                    if (!awaitInstruction(getString(R.string.voice_command_prompt))) {
+                        throw IllegalStateException("Não foi possível anunciar os comandos de voz")
+                    }
+                }
+                if (sessionId != voiceCommandSessionId || ttsManager.isSpeakingNow()) return@launch
+
+                val deferred = speechRecognitionManager.startListening(
+                    noMatchMessage = "Não entendi o comando",
+                ) {
+                    if (sessionId == voiceCommandSessionId) {
+                        updateStatus("Pode falar agora", isDanger = false, detail = getString(R.string.voice_command_examples))
+                        vibrationManager.vibrateDoubleShort()
+                    }
+                }
+                val spokenText = withTimeout(18_000L) { deferred.await() }
+                if (sessionId != voiceCommandSessionId) return@launch
+                isProcessing = false
+                commandDispatched = dispatchVoiceCommand(
+                    VoiceCommandParser.parse(spokenText),
+                    spokenText,
+                    retryOnUnknown,
+                )
+            } catch (_: TimeoutCancellationException) {
+                if (sessionId == voiceCommandSessionId) {
+                    isProcessing = false
+                    handleVoiceCommandFailure("Nenhum comando foi ouvido.", retryOnUnknown)
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (sessionId == voiceCommandSessionId) {
+                    isProcessing = false
+                    handleVoiceCommandFailure(error.message ?: "Não entendi o comando.", retryOnUnknown)
+                }
+            } finally {
+                if (voiceCommandJob == owner) {
+                    voiceCommandJob = null
+                    speechRecognitionManager.stopListening()
+                    if (!commandDispatched) isProcessing = false
+                }
+            }
+        }
+    }
+
+    private fun dispatchVoiceCommand(
+        command: ParsedVoiceCommand,
+        originalText: String,
+        retryOnUnknown: Boolean,
+    ): Boolean {
+        return when (command.type) {
+            VoiceCommandType.READ_PACKAGE -> {
+                handleSingleTap()
+                resumeVoiceCommandsAfterOperation = true
+                true
+            }
+            VoiceCommandType.READ_PRESCRIPTION -> {
+                handleDoubleTap()
+                resumeVoiceCommandsAfterOperation = true
+                true
+            }
+            VoiceCommandType.REGISTER_ALLERGY -> {
+                resumeVoiceCommandsAfterOperation = true
+                isProcessing = true
+                startAllergyVoiceRegistration(command.argument)
+                true
+            }
+            VoiceCommandType.REPEAT_INSTRUCTIONS -> {
+                resumeVoiceCommandsAfterOperation = true
+                val instructions = getString(R.string.repeat_instructions)
+                updateStatus("Instruções", isDanger = false, detail = instructions)
+                vibrationManager.vibrateShort()
+                ttsManager.speak(instructions) { success -> returnToVoiceCommandsAfterSpeech(success) }
+                true
+            }
+            VoiceCommandType.CANCEL -> {
+                resumeVoiceCommandsAfterOperation = false
+                val message = "Comandos de voz encerrados. Os gestos continuam disponíveis."
+                updateStatus("Comandos de voz encerrados", isDanger = false, detail = message)
+                vibrationManager.vibrateShort()
+                ttsManager.speak(message)
+                true
+            }
+            VoiceCommandType.UNKNOWN -> {
+                handleVoiceCommandFailure("Não entendi: $originalText.", retryOnUnknown)
+                true
+            }
+        }
+    }
+
+    private fun handleVoiceCommandFailure(message: String, retry: Boolean) {
+        updateStatus("Comando não entendido", isDanger = false, detail = message)
+        vibrationManager.vibrateShort()
+        val guidance = "$message ${getString(R.string.voice_command_examples)}"
+        ttsManager.speak(guidance) { success ->
+            if (success && retry) startVoiceCommandSession(prompt = false, retryOnUnknown = false)
+        }
+    }
+
+    private fun returnToVoiceCommandsAfterSpeech(success: Boolean) {
+        if (!success || !resumeVoiceCommandsAfterOperation) return
+        val expectedSession = voiceCommandSessionId
+        voiceCommandResumeJob?.cancel()
+        voiceCommandResumeJob = mainScope.launch {
+            delay(400)
+            if (expectedSession == voiceCommandSessionId &&
+                resumeVoiceCommandsAfterOperation &&
+                lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+            ) {
+                startVoiceCommandSession(prompt = true)
+            }
+            voiceCommandResumeJob = null
+        }
+    }
+
+    private fun cancelVoiceCommandSession() {
+        voiceCommandSessionId += 1
+        voiceCommandResumeJob?.cancel()
+        voiceCommandResumeJob = null
+        val pending = voiceCommandJob
+        voiceCommandJob = null
+        pending?.cancel()
+        speechRecognitionManager.stopListening()
+        if (!permissionFlowActive && packageScanJob?.isActive != true &&
+            prescriptionCaptureJob?.isActive != true && allergyJob?.isActive != true
+        ) {
+            isProcessing = false
         }
     }
 
@@ -933,17 +1210,8 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
         }
     }
 
-    private fun updateStatus(message: String, isDanger: Boolean) {
-        topPanel.setBackgroundColor(
-            ContextCompat.getColor(this, if (isDanger) R.color.red_danger else R.color.black)
-        )
-        statusText.setTextAppearance(
-            if (isDanger) R.style.TextAppearance_GuiaMed_Danger else R.style.TextAppearance_GuiaMed_HighContrast
-        )
-        instructionText.setTextColor(
-            ContextCompat.getColor(this, if (isDanger) R.color.white else R.color.yellow_high_contrast)
-        )
-        statusText.text = message
+    private fun updateStatus(message: String, isDanger: Boolean, detail: String = "") {
+        readingPanel.show(message, detail, getString(R.string.visual_alert_label).takeIf { isDanger })
     }
 
     private fun announceStartupIfNeeded() {
@@ -954,7 +1222,11 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
             if (success) {
                 mainScope.launch {
                     kotlinx.coroutines.delay(750)
-                    if (!isProcessing) ttsManager.speakStartupMessage()
+                    if (!isProcessing) {
+                        ttsManager.speakStartupMessage { spoken ->
+                            if (spoken) startVoiceCommandSession(prompt = false)
+                        }
+                    }
                 }
             }
         }
@@ -979,13 +1251,17 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
 
     override fun onPause() {
         super.onPause()
-        if (prescriptionCaptureJob?.isActive == true) {
+        resumeVoiceCommandsAfterOperation = false
+        cancelVoiceCommandSession()
+        touchDetector.reset()
+        if (packageScanJob?.isActive == true || prescriptionCaptureJob?.isActive == true || allergyJob?.isActive == true) {
+            resetPackageReadSession()
             resetPrescriptionReadSession()
             isProcessing = false
         }
         stopScanLighting()
         previewLuminosity = null
-        speechRecognitionManager.stopListening()
+        cancelAllergyRegistration()
         ttsManager.stop()
     }
 
@@ -1001,26 +1277,13 @@ class MainActivity : AppCompatActivity(), PermissionAccessibilityHelper.Permissi
     }
 }
 
-// Analisador de luminosidade para auto-flash
-class LuminosityAnalyzer(private val onLuminosity: (Int) -> Unit) : ImageAnalysis.Analyzer {
-    override fun analyze(imageProxy: ImageProxy) {
-        try {
-            val buffer = imageProxy.planes[0].buffer
-            val pixels = ByteArray(buffer.remaining())
-            buffer.get(pixels)
-            
-            // Calcula luminosidade média (amostragem)
-            var sum = 0L
-            var count = 0
-            for (i in pixels.indices step 100) {
-                sum += (pixels[i].toInt() and 0xFF).toLong()
-                count++
-            }
-            val avgLuminosity = if (count > 0) (sum / count).toInt() else 128
-            
-            onLuminosity(avgLuminosity)
-        } finally {
-            imageProxy.close()
-        }
+private fun readPreviewLuminosity(image: ImageProxy): Int {
+    val buffer = image.planes.firstOrNull()?.buffer ?: return 128
+    var sum = 0L
+    var count = 0
+    for (index in buffer.position() until buffer.limit() step 100) {
+        sum += buffer.get(index).toInt() and 0xFF
+        count++
     }
+    return if (count == 0) 128 else (sum / count).toInt()
 }

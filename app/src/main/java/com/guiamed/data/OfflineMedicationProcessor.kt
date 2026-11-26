@@ -16,7 +16,12 @@ import kotlin.math.roundToInt
  * internet ou do backend. O parser permanece conservador quando a confiança é
  * insuficiente.
  */
-internal class OfflineMedicationProcessor internal constructor(dcbNames: List<String>) {
+internal class OfflineMedicationProcessor internal constructor(
+    dcbNames: List<String>,
+    private val medicationByEan: Map<String, EanMedication> = emptyMap(),
+) {
+
+    internal data class EanMedication(val product: String, val substances: List<String>)
 
     private data class Medicine(
         val name: String,
@@ -51,7 +56,17 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
                     items.map { it.nome }
                 }
             }.getOrDefault(emptyList())
-            return OfflineMedicationProcessor(names)
+            val eanNames = try {
+                context.assets.open("medicamentos_ean.tsv").bufferedReader().useLines { lines ->
+                    lines.filterNot { it.startsWith('#') }.associate { row ->
+                        val (ean, product, substances) = row.split('	', limit = 3)
+                        ean to EanMedication(product, substances.split(';'))
+                    }
+                }
+            } catch (_: java.io.FileNotFoundException) {
+                emptyMap()
+            }
+            return OfflineMedicationProcessor(names, eanNames)
         }
     }
 
@@ -67,9 +82,30 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             components = listOf("nimesulida"),
         ),
         Medicine(
+            name = "Enalapril",
+            aliases = listOf(
+                "ENALAPRIL",
+                "ENAPRIL",
+                "MALEATO DE ENALAPRIL",
+                "MALEATO DE ENAPRIL",
+                "RENITEC",
+            ),
+            components = listOf("enalapril", "maleato de enalapril"),
+        ),
+        Medicine(
             name = "Ibuprofeno",
             aliases = listOf("IBUPROFENO", "ALIVIUM", "ADVIL"),
             components = listOf("ibuprofeno"),
+        ),
+        Medicine(
+            name = "Metformina",
+            aliases = listOf(
+                "METFORMINA",
+                "CLORIDRATO DE METFORMINA",
+                "GLIFAGE",
+                "GLIFAGE XR",
+            ),
+            components = listOf("metformina", "cloridrato de metformina"),
         ),
         Medicine(
             name = "Paracetamol",
@@ -104,16 +140,22 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
         ),
     )
 
-    private val dcbMedicines = dcbNames.asSequence()
+    private val curatedAliases = curatedMedicines.flatMap { medicine ->
+        (medicine.aliases + medicine.name).distinct().map { alias -> normalize(alias) to medicine }
+    }
+    private val curatedByName = curatedAliases.toMap()
+    private val curatedPatterns = curatedAliases.map { (alias, medicine) ->
+        Regex("""(?<![A-Z0-9])${Regex.escape(alias)}(?![A-Z0-9])""") to medicine
+    }
+    private val exactDcbIndex = dcbNames.asSequence()
         .map(String::trim)
-        .filter { normalize(it).length >= 4 }
-        .distinctBy(::normalize)
-        .map { name -> Medicine(name, listOf(name), listOf(name)) }
-        .toList()
-
-    private val exactDcbIndex = dcbMedicines.associateBy { normalize(it.name) }
-    private val fuzzyDcbByLength = dcbMedicines.asSequence()
-        .map { normalize(it.name) to it }
+        .map { name -> normalize(name) to name }
+        .filter { (normalized, _) -> normalized.length >= 4 }
+        .distinctBy { (normalized, _) -> normalized }
+        .associate { (normalized, name) ->
+            normalized to (curatedByName[normalized] ?: Medicine(name, listOf(name), listOf(name)))
+        }
+    private val fuzzyDcbByLength = exactDcbIndex.entries.asSequence()
         .filter { (name, _) -> " " !in name && name.length >= 7 }
         .groupBy { (name, _) -> name.length }
 
@@ -121,11 +163,32 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
         textOcr: String,
         allergies: Collection<String>,
         referenceDate: Calendar = Calendar.getInstance(),
+        ean: String? = null,
+        allowFuzzy: Boolean = true,
     ): VerificarResponse {
         val normalized = normalize(textOcr)
-        val medicine = findMedicine(normalized)
-        val dosage = extractDosage(normalized)
-        val (validity, expired) = extractExpiration(normalized, referenceDate)
+        val textMedicine = findMedicineFromOcr(textOcr, allowFuzzy)
+        val barcodeMedicine = ean?.let(medicationByEan::get)?.let { record ->
+            val knownBySubstance = record.substances.flatMap { substance ->
+                val normalizedSubstance = normalize(substance)
+                curatedByName[normalizedSubstance]?.let { it.aliases + it.components }.orEmpty()
+            }
+            Medicine(record.product, listOf(record.product), (record.substances + knownBySubstance).distinct())
+        }
+        val agreesWithBarcode = barcodeMedicine != null && textMedicine != null &&
+            (barcodeMedicine.aliases + barcodeMedicine.components).any { value ->
+                val name = normalize(value)
+                (textMedicine.aliases + textMedicine.components).any { normalize(it) == name }
+            }
+        val conflicting = barcodeMedicine != null && textMedicine != null && !agreesWithBarcode
+        val medicine = if (conflicting) null else barcodeMedicine ?: textMedicine
+        val possibleAllergy = conflicting && listOfNotNull(textMedicine, barcodeMedicine).any {
+            hasAllergy(allergies, it.aliases + it.components + it.name)
+        }
+        val dosage = if (barcodeMedicine == null || agreesWithBarcode) extractDosage(normalized) else null
+        val expiration = ExpirationReader.findDates(textOcr).singleOrNull()
+        val validity = expiration?.label
+        val expired = expiration?.isExpired(referenceDate) == true
 
         if (medicine == null) {
             return VerificarResponse(
@@ -133,19 +196,18 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
                 miligramas = dosage,
                 validade = validity,
                 vencido = expired,
-                alertaAlergia = false,
+                alertaAlergia = possibleAllergy,
                 componentes = emptyList(),
                 posologia = null,
                 mensagem = "Não consegui identificar o medicamento com segurança. Reposicione a caixa e tente novamente.",
-                perigo = expired,
+                perigo = expired || possibleAllergy,
             )
         }
 
-        val allergyAlert = allergies.any { allergy ->
-            medicine.aliases.plus(medicine.components).plus(medicine.name).any { target ->
-                similarity(allergy, target) >= 0.78
-            }
-        }
+        val allergyAlert = hasAllergy(
+            allergies,
+            medicine.aliases + medicine.components + medicine.name,
+        )
 
         val messages = mutableListOf<String>()
         if (dosage == null) messages += "Dosagem não encontrada na imagem."
@@ -164,6 +226,21 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             mensagem = messages.joinToString(" ").ifBlank { null },
             perigo = expired || allergyAlert,
         )
+    }
+
+    internal fun hasAllergy(allergies: Collection<String>, targets: Collection<String>): Boolean =
+        allergies.any { allergy ->
+            targets.any { target -> similarity(allergy, target) >= 0.78 }
+        }
+
+    internal fun recipeAllergyAlerts(
+        medicines: List<MedicamentoReceita>,
+        allergies: Collection<String>,
+    ): List<String> = medicines.mapNotNull { item ->
+        val normalized = normalize(item.nome)
+        val medicine = curatedByName[normalized] ?: exactDcbIndex[normalized]
+        val targets = medicine?.let { it.aliases + it.components + it.name } ?: listOf(item.nome)
+        item.nome.takeIf { hasAllergy(allergies, targets) }
     }
 
     internal fun parseRecipe(textOcr: String): ReceitaResponse {
@@ -270,19 +347,63 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             }
 
         text = text.split(Regex("""\s+""")).joinToString(" ") { token ->
-            if ('0' in token && token.any(Char::isLetter)) token.replace('0', 'O') else token
+            if (token.count(Char::isLetter) >= 2) {
+                token.replace('0', 'O')
+                    .replace(Regex("""(?<=[A-Z])1(?=[A-Z])"""), "I")
+            } else {
+                token
+            }
         }
         return text.trim()
     }
 
-    private fun findMedicine(normalizedText: String, prescription: Boolean = false): Medicine? {
-        if (prescription) {
-            for (medicine in curatedMedicines) {
-                if (medicine.aliases.any { alias ->
-                        Regex("""\b${Regex.escape(normalize(alias))}\b""").containsMatchIn(normalizedText)
-                    }) return medicine
+    private fun findMedicineFromOcr(textOcr: String, allowFuzzy: Boolean): Medicine? {
+        val lines = textOcr.lineSequence()
+            .map(::normalize)
+            .filter(String::isNotBlank)
+            .toList()
+
+        // A evidência mais forte na embalagem é o nome junto da dosagem. Limitar
+        // a busca a esse contexto evita tratar excipientes como princípio ativo.
+        val dosageContexts = buildList {
+            lines.forEachIndexed { index, line ->
+                if (extractDosage(line) != null) {
+                    add(line)
+                    if (index > 0) add("${lines[index - 1]} $line")
+                    if (index > 1) add("${lines[index - 2]} ${lines[index - 1]} $line")
+                    if (index + 1 < lines.size) add("$line ${lines[index + 1]}")
+                }
             }
-            findDcbMedicine(normalizedText, allowFuzzy = false)?.let { return it }
+        }
+        val dosageMatches = dosageContexts.mapNotNull { findMedicine(it, allowFuzzy = false) }
+            .distinctBy { it.name }
+        if (dosageMatches.size == 1) return dosageMatches.first()
+        if (dosageMatches.size > 1) return null
+
+        return findMedicine(normalize(textOcr), allowFuzzy = allowFuzzy)
+    }
+
+    private fun findMedicine(
+        normalizedText: String,
+        prescription: Boolean = false,
+        allowFuzzy: Boolean = true,
+    ): Medicine? {
+        // Nunca escolha arbitrariamente entre dois medicamentos lidos na mesma
+        // imagem. Isso pode acontecer quando passes diferentes do OCR discordam.
+        val curatedExactMatches = curatedPatterns.asSequence()
+            .filter { (pattern, _) -> pattern.containsMatchIn(normalizedText) }
+            .map { it.second }
+            .distinctBy { it.name }
+            .toList()
+        if (curatedExactMatches.size == 1) return curatedExactMatches.first()
+        if (curatedExactMatches.size > 1) return null
+
+        val exactDcbMatches = findExactDcbMedicines(normalizedText).distinctBy { it.name }
+        if (exactDcbMatches.size == 1) return exactDcbMatches.first()
+        if (exactDcbMatches.size > 1) return null
+        if (!allowFuzzy) return null
+
+        if (prescription) {
             if (extractDosage(normalizedText) == null) return null
         }
         val words = Regex("""[A-Z]{3,}""")
@@ -293,26 +414,45 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
 
         var bestMedicine: Medicine? = null
         var bestScore = 0.0
-        curatedMedicines.forEach { medicine ->
-            medicine.aliases.forEach { alias ->
-                val normalizedAlias = normalize(alias)
-                if (!prescription && normalizedText.contains(normalizedAlias)) return medicine
-                candidates.forEach { candidate ->
-                    val score = similarity(normalizedAlias, candidate)
-                    if (score > bestScore) {
-                        bestScore = score
-                        bestMedicine = medicine
-                    }
+        var secondScore = 0.0
+        for ((alias, medicine) in curatedAliases) {
+            for (candidate in candidates) {
+                val score = normalizedSimilarity(alias, candidate)
+                if (score > bestScore) {
+                    if (bestMedicine?.name != medicine.name) secondScore = bestScore
+                    bestScore = score
+                    bestMedicine = medicine
+                } else if (bestMedicine?.name != medicine.name && score > secondScore) {
+                    secondScore = score
                 }
             }
         }
 
-        if (bestScore >= 0.86) return bestMedicine
+        if (bestScore >= 0.92 && bestScore - secondScore >= 0.08) return bestMedicine
         findDcbMedicine(normalizedText)?.let { return it }
-        return bestMedicine?.takeIf { !prescription && bestScore >= 0.72 }
+        return null
     }
 
-    private fun findDcbMedicine(normalizedText: String, allowFuzzy: Boolean = true): Medicine? {
+    private fun findExactDcbMedicines(normalizedText: String): Set<Medicine> {
+        if (exactDcbIndex.isEmpty()) return emptySet()
+
+        val words = Regex("""[A-Z0-9]{2,}""")
+            .findAll(normalizedText)
+            .map { it.value }
+            .filter { word -> word.any(Char::isLetter) }
+            .toList()
+
+        val exactMatches = linkedSetOf<Medicine>()
+        for (size in 1..minOf(6, words.size)) {
+            for (index in 0..words.size - size) {
+                val candidate = words.subList(index, index + size).joinToString(" ")
+                exactDcbIndex[candidate]?.let(exactMatches::add)
+            }
+        }
+        return exactMatches
+    }
+
+    private fun findDcbMedicine(normalizedText: String): Medicine? {
         if (exactDcbIndex.isEmpty()) return null
 
         val words = Regex("""[A-Z0-9]{2,}""")
@@ -321,25 +461,10 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             .filter { word -> word.any(Char::isLetter) }
             .toList()
 
-        var exactMatch: Medicine? = null
-        var exactLength = 0
-        for (size in 1..minOf(6, words.size)) {
-            for (index in 0..words.size - size) {
-                val candidate = words.subList(index, index + size).joinToString(" ")
-                val medicine = exactDcbIndex[candidate]
-                if (medicine != null && candidate.length > exactLength) {
-                    exactMatch = medicine
-                    exactLength = candidate.length
-                }
-            }
-        }
-        if (exactMatch != null || !allowFuzzy) return exactMatch
-
         val candidates = words.asSequence()
             .filter { it.length >= 7 && it !in nonMedicineWords }
             .toSet()
         var bestMedicine: Medicine? = null
-        var bestName = ""
         var bestScore = 0.0
         var secondScore = 0.0
 
@@ -347,20 +472,19 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             val tolerance = max(2, (candidate.length * 0.18).roundToInt())
             for (length in candidate.length - tolerance..candidate.length + tolerance) {
                 fuzzyDcbByLength[length].orEmpty().forEach { (officialName, medicine) ->
-                    val score = similarity(officialName, candidate)
+                    val score = normalizedSimilarity(officialName, candidate)
                     if (score > bestScore) {
-                        secondScore = bestScore
+                        if (bestMedicine?.name != medicine.name) secondScore = bestScore
                         bestScore = score
                         bestMedicine = medicine
-                        bestName = officialName
-                    } else if (officialName != bestName && score > secondScore) {
+                    } else if (bestMedicine?.name != medicine.name && score > secondScore) {
                         secondScore = score
                     }
                 }
             }
         }
 
-        return bestMedicine?.takeIf { bestScore >= 0.86 && bestScore - secondScore >= 0.04 }
+        return bestMedicine?.takeIf { bestScore >= 0.90 && bestScore - secondScore >= 0.08 }
     }
 
     private fun extractDosage(normalizedText: String): String? {
@@ -369,24 +493,6 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             ?: return null
         return (match.groupValues[1].replace(',', '.') +
             match.groupValues[2].lowercase(Locale.ROOT))
-    }
-
-    private fun extractExpiration(
-        normalizedText: String,
-        referenceDate: Calendar,
-    ): Pair<String?, Boolean> {
-        val match = Regex(
-            """\b(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP|V)\s*[:.\-]?\s*""" +
-                """(0?[1-9]|1[0-2])\s*[/\-. ]\s*(\d{2}|\d{4})\b""",
-        ).find(normalizedText) ?: return null to false
-
-        val month = match.groupValues[1].toInt()
-        val rawYear = match.groupValues[2].toInt()
-        val year = if (rawYear < 100) rawYear + 2000 else rawYear
-        val expired = year < referenceDate.get(Calendar.YEAR) ||
-            (year == referenceDate.get(Calendar.YEAR) &&
-                month < referenceDate.get(Calendar.MONTH) + 1)
-        return "%02d/%04d".format(Locale.ROOT, month, year) to expired
     }
 
     private fun extractRecipeFrequency(normalizedText: String): String {
@@ -398,6 +504,7 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
             """\b(?:\d{1,2}|UMA|DUAS|TRES)\s*(?:X|VEZ|VEZES)\s*(?:AO|POR)\s*DIA\b""",
             """\b(?:\d{1,2}\s*(?:X|VEZ|VEZES)\s*/\s*DIA|TODOS OS DIAS|DIARIAMENTE)\b""",
             """\b(?:PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b""",
+            """\b(?:DE MANHA|DE TARDE|A TARDE|DE NOITE)\b""",
         )
         patterns.forEach { pattern ->
             Regex(pattern).find(normalizedText)?.let {
@@ -418,29 +525,29 @@ internal class OfflineMedicationProcessor internal constructor(dcbNames: List<St
     private fun extractRecipeInstructions(normalizedText: String): String? {
         val instructions = mutableListOf<String>()
         Regex(
-            """\b(?:TOMAR|USAR|APLICAR|INGERIR)\s+""" +
+            """\b(?:TOMAR|USAR|APLICAR|INGERIR|USO\s*:)\s*""" +
                 """(?:\d{1,2}|UM|UMA|MEIO|MEIA)\s+""" +
                 """(?:COMPRIMIDOS?|CP|CAPSULAS?|CAP|GOTAS?|ML|DOSES?|PUFFS?)\b""",
         ).find(normalizedText)?.value?.lowercase(Locale.forLanguageTag("pt-BR"))?.let(instructions::add)
 
         Regex(
             """\b(?:APOS AS? REFEICOES?|ANTES DAS? REFEICOES?|EM JEJUM|""" +
-                """PELA MANHA|A NOITE|AO DEITAR|ANTES DE DORMIR)\b""",
+                """PELA MANHA|DE MANHA|A TARDE|DE TARDE|A NOITE|DE NOITE|""" +
+                """AO DEITAR|ANTES DE DORMIR|VIA ORAL)\b""",
         ).find(normalizedText)?.value?.lowercase(Locale.forLanguageTag("pt-BR"))?.let { context ->
             if (context !in instructions) instructions += context
         }
         return instructions.joinToString(", ").ifBlank { null }
     }
 
-    private fun similarity(left: String, right: String): Double {
-        val normalizedLeft = normalize(left)
-        val normalizedRight = normalize(right)
-        if (normalizedLeft.isBlank() || normalizedRight.isBlank()) return 0.0
-        if (normalizedLeft.contains(normalizedRight) || normalizedRight.contains(normalizedLeft)) {
-            return 1.0
-        }
-        val longest = max(normalizedLeft.length, normalizedRight.length)
-        return 1.0 - levenshteinDistance(normalizedLeft, normalizedRight).toDouble() / longest
+    private fun similarity(left: String, right: String): Double =
+        normalizedSimilarity(normalize(left), normalize(right))
+
+    private fun normalizedSimilarity(left: String, right: String): Double {
+        if (left.isBlank() || right.isBlank()) return 0.0
+        if (left.contains(right) || right.contains(left)) return 1.0
+        val longest = max(left.length, right.length)
+        return 1.0 - levenshteinDistance(left, right).toDouble() / longest
     }
 
     private fun levenshteinDistance(left: String, right: String): Int {
