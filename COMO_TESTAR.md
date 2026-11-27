@@ -1,5 +1,28 @@
 # Como testar o GuiaMed V1
 
+## Regressão de OCR, tempo de leitura e fine-tuning
+
+Use apenas textos e receitas de teste, sem dados pessoais. Execute os cenários de câmera em aparelho físico; testes unitários não comprovam foco, iluminação, letra manuscrita ou tempo total no celular.
+
+1. Compile o debug integrado com `-PGUIAMED_USE_REMOTE_API=true`. No emulador, use a URL padrão `http://10.0.2.2:8000/`. Em aparelho USB, configure `adb reverse tcp:8000 tcp:8000` e compile com `-PGUIAMED_API_BASE_URL=http://127.0.0.1:8000/`.
+2. Inicie o backend com o ambiente que contém as dependências e o modelo compatível. Confira o cabeçalho de saúde:
+
+   ```powershell
+   $resposta = Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing
+   $resposta.Headers['X-GuiaMed-IA']
+   ```
+
+   `ready` confirma o carregamento. `disabled`, `unavailable` ou `legacy-incompatible` significam operação pelo parser. Não use uma resposta HTTP 200 como prova de que o fine-tuning está ativo.
+3. Leia uma caixa com texto legível e outra com nome fragmentado pelo OCR. Inclua uma amostra longa, acima de 768 caracteres, e posicione o nome também no final do texto. A API deve examinar trechos relevantes, sem descartar o documento inteiro pelo tamanho.
+4. Teste uma receita com um medicamento legível e outro com falha de OCR. Confira cada nome e a dose/frequência de sua própria linha. Um complemento não pode substituir doses já reconhecidas nem associar a dose do próximo medicamento ao anterior.
+   Inclua `OMEPRAZOL` seguido de `2) Pressormin 900 MG A CADA 6 HORAS`: a dose e a frequência do Omeprazol devem permanecer não identificadas. Repita com marcador `-`, com ponto e vírgula e com os itens na mesma linha. Para embalagem, `OBSERVACAO 100 MG` antes de `OMEPRAZOL 20 MG` deve produzir 20 mg.
+5. Faça a leitura com a lente coberta e com uma folha parcialmente legível. O app deve concluir ou orientar uma nova leitura por gesto, sem iniciar automaticamente uma sequência de três capturas completas. Dados já reconhecidos devem permanecer disponíveis quando o complemento esgota seu tempo.
+6. Desligue a API durante uma leitura e repita com uma resposta lenta/erro 500. Deve haver uma única tentativa HTTP dentro do orçamento da leitura, retorno local e feedback audível; o app deve continuar aceitando gestos. Cancelar ou sair do app deve cancelar o trabalho pendente.
+7. Abra o app a frio e faça imediatamente uma leitura de Dipirona. O catálogo básico deve responder sem aguardar o índice EAN inteiro. Depois que os índices carregarem, repita com uma substância DCB e um EAN conhecido. Repita com alergia cadastrada e caixa vencida para conferir a tríade de alerta.
+8. Compile e repita os gestos no debug offline com `-PGUIAMED_USE_REMOTE_API=false`: nenhuma leitura deve depender de HTTP ou exibir aviso de conexão com servidor.
+
+Registre no teste físico o modelo do aparelho, se a API/IA estava ativa, rota de leitura e tempo em `GuiaMedScan`. Compare nas mesmas condições; as métricas de inferência em OCR sintético não são o tempo total da câmera.
+
 ## Preparação
 
 - JDK 17 e Android SDK 34.

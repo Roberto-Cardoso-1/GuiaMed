@@ -1,34 +1,61 @@
-# Runtime local do GuiaMed
+﻿# Runtime local do GuiaMed
 
-O startup prepara o índice RAG de `../data/bulas.json` e carrega uma instância do LoRA v2 por processo do servidor. O modo padrão carrega a base e mescla o adapter em FP32. Para rodar nesse modo, instale `requirements-lora.txt` no mesmo ambiente Python 3.12 que inicia o backend. Com múltiplos workers, cada processo usa sua própria cópia do modelo.
+A API usa o parser e um LoRA alinhado a nomes reais, carregado uma vez por processo em FP32. O modelo opera sobre texto OCR; não reconhece imagens nem transforma o ML Kit em leitor de manuscritos.
 
-- A base é o SmolLM2-135M-Instruct na revisão `12fd25f77366fa6b3b4b768ec3050bf629380bac`. O runtime procura em `HF_HOME/hub/models--HuggingFaceTB--SmolLM2-135M-Instruct/snapshots/<revisão>`. Sem `HF_HOME`, usa `.tools/huggingface` na raiz do workspace.
-- O adapter é lido de `../evidencias/ia/finetuning_v2/adapter/` e verificado por SHA-256. O carregador usa exclusivamente arquivos locais.
-- `LORA_ENABLED=false` desativa o carregamento. `LORA_THREADS` controla as threads de CPU. Se faltarem arquivos ou dependências, a API registra a falha de inicialização e atende com o parser.
-- O `POST /verificar` consulta o LoRA somente quando o parser não identifica o medicamento e o OCR contém uma única evidência corroborável no catálogo. Essa evidência corresponde ao nome ou alias completo com espaços de OCR. O modelo pode confirmar o nome, e o parser extrai dose e validade do OCR e cruza componentes do catálogo com as alergias cadastradas. Solicitações com modelo ocupado ou indisponível seguem com o resultado do parser. O `POST /receita` também pode confirmar um nome quando o parser não reconhece nenhum item, com no máximo uma geração por receita. O adapter foi treinado com nomes fictícios, então seu desempenho em embalagens reais permanece por avaliar.
+## Iniciar e conferir a IA
 
-## Exportar e selecionar GGUF
+Instale `requirements-lora.txt` no ambiente Python 3.12 usado para iniciar a API. Neste workspace, o ambiente pronto está em `C:/meu-sistema/.tools/finetuning-venv/`. A revisão da base é `12fd25f77366fa6b3b4b768ec3050bf629380bac`; o carregador usa somente o cache local em `HF_HOME/hub/`, ou `.tools/huggingface/hub/` por padrão.
 
-Execute em `GuiaMed/backend`, no ambiente de fine-tuning. A exportação requer o conversor do llama.cpp com suas dependências já instaladas e o binário local `llama-quantize`. O checkpoint mesclado é intermediário. O exportador aceita `--quantization Q4_K_M` (padrão), `Q8_0` ou `F16` e publica o GGUF no destino em um sistema de arquivos com suporte a hard links, como NTFS. O exportador recusa sobrescrever uma saída existente.
+O adapter padrão é `../evidencias/ia/catalog_real_active/adapter/`. `LORA_ADAPTER_DIR` permite um override explícito. O carregador exige manifesto aprovado, prompt/revisão compatíveis e SHA-256 dos pesos, catálogo e avaliação. Se arquivos ou dependências faltarem, a API continua com o parser e informa a indisponibilidade.
 
 ```powershell
-python -B export_lora_gguf.py --converter C:/tools/llama.cpp/convert_hf_to_gguf.py `
-    --quantizer C:/tools/llama.cpp/bin/llama-quantize.exe `
-    --output ../models/guiamed-lora-v2-q4_k_m.gguf
+# Na pasta backend, com o ambiente correto ativado
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+$resposta = Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing
+$resposta.Headers['X-GuiaMed-IA']
 ```
 
-Se o conversor usa outro ambiente Python, informe `--converter-python`. Para carregar a saída, instale `llama-cpp-python` no ambiente do backend e configure `LORA_GGUF_PATH` com o caminho do GGUF exportado. Neste Windows x64 com Python 3.12, a versão validada foi `0.3.18` do [índice de binários CPU do projeto](https://abetlen.github.io/llama-cpp-python/whl/cpu). Um caminho relativo é resolvido a partir do diretório de execução do backend. Compare o GGUF com o FP32 usando os mesmos textos e prompt antes de habilitar o arquivo exportado. Se o GGUF configurado não carregar, a API tenta o LoRA v2 em FP32 no mesmo startup.
+`ready` confirma que o modelo carregou; `disabled`, `unavailable` e `legacy-incompatible` indicam operação sem esse complemento. HTTP 200 sozinho não comprova uso do LoRA. No Windows deste workspace, `C:/meu-sistema/Iniciar-GuiaMed.ps1` inicia banco/API e também informa esse estado.
 
+- `LORA_ENABLED=false` desativa o modelo.
+- `LORA_THREADS=4` controla threads de CPU.
+- `LORA_MAX_CALLS=4` limita gerações por documento.
+- `LORA_BUDGET_MS=1500` limita cooperativamente preparação e inferência. A geração para entre tokens e descarta respostas tardias; um passo de CPU em andamento pode ultrapassar o prazo. O teste com orçamento de 1 ms levou cerca de 140 ms e descartou a resposta.
 
-## Variante validada no GuiaMed
+## Recuperação e segurança
 
-O inicializador `Iniciar-GuiaMed.ps1` seleciona o GGUF F16 gerado em `models/guiamed-lora-v2-f16.gguf` quando disponível e quando o ambiente e o `.env` permitem usar o caminho padrão. A seleção foi feita a partir dos 48 exemplos sintéticos inéditos do LoRA v2, com geração determinística e quatro threads.
+`/verificar` examina o documento inteiro para procurar ambiguidades e envia somente trechos OCR relevantes ao modelo. Documentos acima de 768 caracteres não são descartados inteiramente. Um nome proposto exige evidência independente no OCR e no catálogo; nomes fictícios, divergentes e textos de instrução hostil são recusados.
 
-| Runtime | Acertos | Mediana de inferência |
-| --- | ---: | ---: |
-| FP32 mesclado | 23/48 | 606 ms |
-| GGUF F16 | 23/48 | 242 ms |
-| GGUF Q4_K_M | 20/48 | 247 ms |
-| GGUF Q8_0 | 21/48 | 328 ms |
+`/receita` também tenta recuperar itens pendentes quando outros já foram reconhecidos, dentro do mesmo orçamento. Dose, frequência, duração e validade vêm do texto impresso; a geração não fornece esses campos. A fronteira de um item recusado impede atribuir sua dose ao anterior. Alergias continuam sendo cruzadas com os componentes catalogados.
 
-O resultado mede a recuperação de nomes sintéticos. A leitura de embalagens reais e o tempo de ponta a ponta do Android exigem teste com câmera.
+O JSON de `/verificar`, `/receita` e `/alergias` foi preservado. O estado da IA é exposto no cabeçalho `X-GuiaMed-IA`, sem registrar o texto das receitas ou alergias.
+
+## Evidência do modelo ativo
+
+O treino usou oito épocas, 226 exemplos sintéticos com nomes reais, 25 aliases de 14 medicamentos e layout de teste reservado. A avaliação não mede nomes inéditos, todo o catálogo DCB, fotos reais ou desempenho da câmera.
+
+| Fluxo no mesmo conjunto | Acertos positivos | Falsos aceites nos 4 negativos | Mediana / p95 |
+| --- | ---: | ---: | ---: |
+| Base sem adapter + runtime | 0/25 | 0/4 | 875 / 1033 ms |
+| Adapter real + runtime | 23/25 | 0/4 | 356 / 497 ms |
+
+A receita de três itens levou cerca de 769 ms nesse computador. Essas medidas não são o tempo total do Android. Os dois positivos ainda recusados não foram aceitos por redução de limiar.
+
+Veja [resultados e limites](../evidencias/ia/RECUPERACAO_CATALOGO_REAL.md), [avaliação ativa](../evidencias/ia/catalog_real_active/candidate_runtime_independent.json) e [smoke HTTP](../evidencias/ia/catalog_real_active/http_smoke.json).
+
+## Reproduzir
+
+A partir da raiz `GuiaMed/`, usando o Python do ambiente de fine-tuning:
+
+```powershell
+python -m unittest discover -s backend -p 'test_*.py'
+python scripts/smoke_catalog_api.py
+python scripts/run_catalog_real_experiment.py --run catalog_real_novo --epochs 8
+python scripts/evaluate_catalog_runtime.py --run catalog_real_novo
+```
+
+Use nomes de execução novos; o treino não sobrescreve os anteriores. A promoção exige avaliação real do runtime e ativação explícita. O destino ativo existente não é substituído silenciosamente.
+
+## Histórico v2 e GGUF
+
+Os artefatos v2 e seus GGUF foram preservados para reprodução acadêmica. Eles foram treinados com nomes fictícios e não recebem o novo prompt no runtime. `LORA_GGUF_PATH` legado é recusado como incompatível, sem fallback oculto. Um GGUF do modelo real ainda precisa ser exportado e avaliado antes de uso. O inicializador não força mais o F16 v2. A [avaliação v2](../evidencias/ia/finetuning_v2/README.md) permanece como registro histórico.

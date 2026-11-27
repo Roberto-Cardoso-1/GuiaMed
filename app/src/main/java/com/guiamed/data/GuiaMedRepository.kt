@@ -3,12 +3,10 @@ package com.guiamed.data
 import android.content.Context
 import com.guiamed.GuiaMedApplication
 import com.guiamed.BuildConfig
+import com.guiamed.ocr.ReadBudget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import java.io.IOException
 
 /**
  * Repositório offline por padrão.
@@ -21,6 +19,7 @@ class GuiaMedRepository(
     private val api: GuiaMedApi = GuiaMedApi.create(),
     private val useRemoteApi: Boolean = BuildConfig.USE_REMOTE_API,
 ) {
+    internal val remoteReserveMillis: Long get() = if (useRemoteApi) ReadBudget.HTTP_MILLIS else 0L
 
     companion object {
         private const val networkErrorMessage = "Sem conexão com o servidor. Usando processamento local."
@@ -45,7 +44,11 @@ class GuiaMedRepository(
         }
     }
 
-    suspend fun verificarMedicamento(context: Context, textoOcr: String): Result<VerificarResponse> {
+    internal suspend fun verificarMedicamento(
+        context: Context,
+        textoOcr: String,
+        budget: ReadBudget = ReadBudget(ReadBudget.HTTP_MILLIS),
+    ): Result<VerificarResponse> {
         val localResponse = verificarLocal(context, textoOcr)
         if (!useRemoteApi || localResponse.perigo ||
             !localResponse.nome.startsWith("Medicamento não identificado")
@@ -54,12 +57,10 @@ class GuiaMedRepository(
         val offlineProcessor = processor(context)
         val allergies = withContext(Dispatchers.IO) { LocalAllergyStore.getAll(context) }
 
-        val remote = withTimeoutOrNull(2_500) {
-            requestWithRetry {
+        val remote = boundedRequest(budget) {
                 val deviceId = DeviceIdRepository.getOrCreateDeviceId(context)
                 api.verificarMedicamento(VerificarRequest(deviceId = deviceId, textoOcr = textoOcr))
-            }.getOrNull()
-        }
+        }.getOrNull()
         return Result.success(
             if (remote != null) reconcileMedicationSafety(localResponse, remote, allergies, offlineProcessor)
             else localResponse.copy(mensagem = appendMessage(localResponse.mensagem, networkErrorMessage)),
@@ -76,11 +77,14 @@ class GuiaMedRepository(
                     alergiasRegistradas = registeredAllergies,
                 )
             }
-        }.getOrElse { return Result.failure(it) }
+        }.getOrElse {
+            if (it is CancellationException) throw it
+            return Result.failure(it)
+        }
 
         if (!useRemoteApi) return Result.success(localResponse)
 
-        return requestWithRetry {
+        return boundedRequest(ReadBudget(ReadBudget.HTTP_MILLIS)) {
             val deviceId = DeviceIdRepository.getOrCreateDeviceId(context)
             api.registrarAlergia(
                 AlergiaRequest(
@@ -108,30 +112,35 @@ class GuiaMedRepository(
             )
         }
 
-    internal suspend fun complementarReceita(context: Context, local: ReceitaResponse): ReceitaResponse {
+    internal suspend fun complementarReceita(
+        context: Context,
+        local: ReceitaResponse,
+        budget: ReadBudget,
+    ): ReceitaResponse {
         val text = local.textoOcrCompleto ?: return local
-        if (!useRemoteApi || local.medicamentosComAlerta.isNotEmpty() || !local.needsPrescriptionReview()) {
+        if (!shouldComplementPrescription(context, local)) {
             return local
         }
 
-        return requestWithRetry {
+        return boundedRequest(budget) {
             val deviceId = DeviceIdRepository.getOrCreateDeviceId(context)
             api.lerReceita(ReceitaRequest(deviceId = deviceId, textoOcr = text))
         }.map { remote ->
-            val selected = selectPrescriptionRead(local, remote) ?: local
             withContext(Dispatchers.IO) {
-                selected.copy(
-                    textoOcrCompleto = text,
-                    medicamentosComAlerta = processor(context).recipeAllergyAlerts(
-                        selected.medicamentos,
-                        LocalAllergyStore.getAll(context),
-                    ),
+                reconcileRemotePrescription(
+                    local, remote, processor(context), LocalAllergyStore.getAll(context),
                 )
             }
         }.getOrElse {
             local.copy(mensagem = appendMessage(local.mensagem, networkErrorMessage))
         }
     }
+
+    internal fun shouldComplementPrescription(context: Context, local: ReceitaResponse): Boolean =
+        useRemoteApi && local.medicamentosComAlerta.isEmpty() &&
+            (local.needsPrescriptionReview() || processor(context).hasUnrecognizedPrescriptionLine(
+                local.textoOcrCompleto.orEmpty(), local,
+            ))
 
     private fun reconcileMedicationSafety(
         local: VerificarResponse,
@@ -167,22 +176,6 @@ class GuiaMedRepository(
             .joinToString(" ")
             .ifBlank { null }
 
-    private suspend fun processor(context: Context): OfflineMedicationProcessor =
-        (context.applicationContext as GuiaMedApplication).medicationProcessor.await()
-
-    private suspend fun <T> requestWithRetry(request: suspend () -> T): Result<T> =
-        withContext(Dispatchers.IO) {
-            var lastError: Exception? = null
-            repeat(2) { attempt ->
-                try {
-                    return@withContext Result.success(request())
-                } catch (error: CancellationException) {
-                    throw error
-                } catch (error: Exception) {
-                    lastError = error
-                    if (attempt == 0) delay(750)
-                }
-            }
-            Result.failure(IOException(networkErrorMessage, lastError))
-        }
+    private fun processor(context: Context): OfflineMedicationProcessor =
+        (context.applicationContext as GuiaMedApplication).medicationProcessor
 }

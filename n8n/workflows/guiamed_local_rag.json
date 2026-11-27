@@ -1,6 +1,6 @@
 {
   "id": "guiamedLocalRagV1",
-  "name": "GuiaMed - RAG local auditável",
+  "name": "GuiaMed - RAG generativo local v1/v2 e auditoria",
   "active": false,
   "nodes": [
     {
@@ -9,7 +9,10 @@
       "name": "Iniciar evidência",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [260, 300]
+      "position": [
+        260,
+        300
+      ]
     },
     {
       "parameters": {
@@ -27,66 +30,159 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "{\"device_id\":\"n8n-aparelho-ficticio-001\",\"pergunta\":\"Para que serve Pressormin?\",\"timestamp\":1794800000}",
+        "body": "={{ JSON.stringify({ device_id: 'n8n-aparelho-ficticio-001', pergunta: 'Para que serve Pressormin?', timestamp: Date.now(), prompt_version: 'v1' }) }}",
         "options": {
-          "timeout": 10000
+          "timeout": 120000
         }
       },
-      "id": "620c9bd8-b3bc-45a1-927e-c898220b9e56",
-      "name": "Consultar RAG local",
+      "id": "guiamed-rag-http-v1",
+      "name": "Gerar RAG v1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [500, 300]
+      "position": [
+        500,
+        300
+      ],
+      "retryOnFail": false
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "b4b3ae8e-545f-49c1-b851-27cd4bacf7a8",
+              "id": "v1-metric-0",
+              "name": "versao_solicitada",
+              "value": "v1",
+              "type": "string"
+            },
+            {
+              "id": "v1-metric-1",
+              "name": "status_geracao",
+              "value": "={{ $json.geracao_llm_real === true && $json.llm_called === true && $json.generator_backend === 'transformers' && $json.mode === 'llm_grounded' ? 'LLM_REAL_VALIDADO_PELO_FILTRO' : ($json.fallback === true ? 'FALLBACK_EXTRATIVO' : ($json.mode && $json.mode.startsWith('refusal_') ? 'RECUSA' : 'GERACAO_NAO_COMPROVADA')) }}",
+              "type": "string"
+            },
+            {
+              "id": "v1-metric-2",
+              "name": "status_auditoria",
+              "value": "={{ $json.auditoria && $json.auditoria.id === $json.auditoria_id && $json.auditoria.backend === 'postgresql' && $json.auditoria.persistida === true ? 'POSTGRESQL_PERSISTIDO' : ($json.auditoria && $json.auditoria.backend === 'memoria' && $json.auditoria.persistida === false ? 'MEMORIA_NAO_PERSISTIDA' : 'RECIBO_INVALIDO') }}",
+              "type": "string"
+            },
+            {
+              "id": "v1-metric-3",
               "name": "status_evidencia",
-              "value": "={{ $json.fontes && $json.fontes.length > 0 && $json.auditoria_id ? 'PASSOU' : 'FALHOU' }}",
+              "value": "={{ $json.geracao_llm_real === true && $json.mode === 'llm_grounded' && $json.llm_called === true && $json.generator_backend === 'transformers' && $json.fallback === false && $json.output_tokens > 0 && $json.input_tokens > 0 && $json.prompt_version === 'v1' && $json.fontes && $json.fontes.length > 0 && $json.auditoria && $json.auditoria.id === $json.auditoria_id && $json.auditoria.backend === 'postgresql' && $json.auditoria.persistida === true ? 'GERACAO_E_PERSISTENCIA_COMPROVADAS' : 'EVIDENCIA_INCOMPLETA' }}",
               "type": "string"
             },
             {
-              "id": "933ab8ce-57b4-47ad-9b8c-727cb8e53d50",
-              "name": "resposta",
-              "value": "={{ $json.resposta }}",
+              "id": "v1-metric-4",
+              "name": "qualidade_textual",
+              "value": "NAO_AVALIADA_POR_ESTE_WORKFLOW",
               "type": "string"
-            },
-            {
-              "id": "89a4e6b7-6a8e-443c-8d79-b5cc0be7ed9f",
-              "name": "fontes",
-              "value": "={{ $json.fontes }}",
-              "type": "array"
-            },
-            {
-              "id": "b3dcb8b8-cfc7-4d4b-9df6-02027ae3642e",
-              "name": "auditoria_id",
-              "value": "={{ $json.auditoria_id }}",
-              "type": "string"
-            },
-            {
-              "id": "e619a420-70ab-4308-9a10-29f2eae1c97c",
-              "name": "latencia_ms",
-              "value": "={{ $json.latencia_ms }}",
-              "type": "number"
-            },
-            {
-              "id": "445e49a6-143e-4e72-aa09-8f02c481d238",
-              "name": "custo_usd",
-              "value": "={{ $json.custo_usd }}",
-              "type": "number"
             }
           ]
         },
+        "includeOtherFields": true,
         "options": {}
       },
-      "id": "5fe588bc-18f1-4504-9d58-ecf6864027a4",
-      "name": "Validar resposta e auditoria",
+      "id": "guiamed-rag-evidence-v1",
+      "name": "Validar v1",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [760, 300]
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/rag/consultar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ device_id: 'n8n-aparelho-ficticio-001', pergunta: 'Para que serve Pressormin?', timestamp: Date.now(), prompt_version: 'v2' }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "guiamed-rag-http-v2",
+      "name": "Gerar RAG v2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        300
+      ],
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "v2-metric-0",
+              "name": "versao_solicitada",
+              "value": "v2",
+              "type": "string"
+            },
+            {
+              "id": "v2-metric-1",
+              "name": "status_geracao",
+              "value": "={{ $json.geracao_llm_real === true && $json.llm_called === true && $json.generator_backend === 'transformers' && $json.mode === 'llm_grounded' ? 'LLM_REAL_VALIDADO_PELO_FILTRO' : ($json.fallback === true ? 'FALLBACK_EXTRATIVO' : ($json.mode && $json.mode.startsWith('refusal_') ? 'RECUSA' : 'GERACAO_NAO_COMPROVADA')) }}",
+              "type": "string"
+            },
+            {
+              "id": "v2-metric-2",
+              "name": "status_auditoria",
+              "value": "={{ $json.auditoria && $json.auditoria.id === $json.auditoria_id && $json.auditoria.backend === 'postgresql' && $json.auditoria.persistida === true ? 'POSTGRESQL_PERSISTIDO' : ($json.auditoria && $json.auditoria.backend === 'memoria' && $json.auditoria.persistida === false ? 'MEMORIA_NAO_PERSISTIDA' : 'RECIBO_INVALIDO') }}",
+              "type": "string"
+            },
+            {
+              "id": "v2-metric-3",
+              "name": "status_evidencia",
+              "value": "={{ $json.geracao_llm_real === true && $json.mode === 'llm_grounded' && $json.llm_called === true && $json.generator_backend === 'transformers' && $json.fallback === false && $json.output_tokens > 0 && $json.input_tokens > 0 && $json.prompt_version === 'v2' && $json.fontes && $json.fontes.length > 0 && $json.auditoria && $json.auditoria.id === $json.auditoria_id && $json.auditoria.backend === 'postgresql' && $json.auditoria.persistida === true ? 'GERACAO_E_PERSISTENCIA_COMPROVADAS' : 'EVIDENCIA_INCOMPLETA' }}",
+              "type": "string"
+            },
+            {
+              "id": "v2-metric-4",
+              "name": "qualidade_textual",
+              "value": "NAO_AVALIADA_POR_ESTE_WORKFLOW",
+              "type": "string"
+            },
+            {
+              "id": "v2-metric-5",
+              "name": "mesma_pergunta",
+              "value": "={{ $json.consulta_sha256 === $('Validar v1').first().json.consulta_sha256 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "v2-metric-6",
+              "name": "mesmo_modelo_revision",
+              "value": "={{ $json.model === $('Validar v1').first().json.model && $json.revision === $('Validar v1').first().json.revision }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "guiamed-rag-evidence-v2",
+      "name": "Validar v2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        300
+      ]
     }
   ],
   "connections": {
@@ -94,18 +190,40 @@
       "main": [
         [
           {
-            "node": "Consultar RAG local",
+            "node": "Gerar RAG v1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Consultar RAG local": {
+    "Gerar RAG v1": {
       "main": [
         [
           {
-            "node": "Validar resposta e auditoria",
+            "node": "Validar v1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar v1": {
+      "main": [
+        [
+          {
+            "node": "Gerar RAG v2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar RAG v2": {
+      "main": [
+        [
+          {
+            "node": "Validar v2",
             "type": "main",
             "index": 0
           }
@@ -115,7 +233,9 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
   },
   "pinData": {},
   "tags": []

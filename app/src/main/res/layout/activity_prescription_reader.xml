@@ -17,6 +17,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/readingPanel" />
 
+    <!-- Limita o painel superior para preservar a visualização da receita -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/panelMaxGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.45" />
+
     <!-- Texto de status (acessibilidade) -->
     <include
         android:id="@id/readingPanel"
@@ -24,7 +32,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constrainedHeight="true"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/panelMaxGuideline"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

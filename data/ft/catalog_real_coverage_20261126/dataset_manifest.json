@@ -1,0 +1,9 @@
+{
+  "catalog_sha256": "b6b1c16a9094d9d1382b9b2a9b6f321cabc2d895004a96a507e46ffe69dffb3c",
+  "train_sha256": "75143c89e7b3eebee1aac6394dd60b9aeaa740e8929efc0f170a112ecf619501",
+  "test_sha256": "b35790c355e37ca42ff0ac94467b1d2b83a1b25ed79c6a21227d71cf7248c621",
+  "train_count": 226,
+  "test_count": 29,
+  "positive_labels": 25,
+  "split": "held-out layout; identities overlap; synthetic only"
+}

@@ -1,0 +1,226 @@
+{"input": "ACIDO ACETI LSALICILICO 500 MG", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "Produto: ACIDO ACETI LSALICILICO\nUSO ORAL", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "ACIDO ACETI LSALICILICO\nVAL: 12/27", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "ACI DO  ACE TIL SAL ICI LIC O 500 MG", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "Produto: ACI DO  ACE TIL SAL ICI LIC O\nUSO ORAL", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "ACI DO  ACE TIL SAL ICI LIC O\nVAL: 12/27", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "ACIDO ACETILSALICILICO 500 MG", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "Produto: ACIDO ACETILSALICILICO\nUSO ORAL", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "ACIDO ACETILSALICILICO\nVAL: 12/27", "expected": "ACIDO ACETILSALICILICO"}
+{"input": "ALI VIUM 500 MG", "expected": "ALIVIUM"}
+{"input": "Produto: ALI VIUM\nUSO ORAL", "expected": "ALIVIUM"}
+{"input": "ALI VIUM\nVAL: 12/27", "expected": "ALIVIUM"}
+{"input": "ALI VIU M 500 MG", "expected": "ALIVIUM"}
+{"input": "Produto: ALI VIU M\nUSO ORAL", "expected": "ALIVIUM"}
+{"input": "ALI VIU M\nVAL: 12/27", "expected": "ALIVIUM"}
+{"input": "ALIVIUM 500 MG", "expected": "ALIVIUM"}
+{"input": "Produto: ALIVIUM\nUSO ORAL", "expected": "ALIVIUM"}
+{"input": "ALIVIUM\nVAL: 12/27", "expected": "ALIVIUM"}
+{"input": "AMOXI CILINA 500 MG", "expected": "AMOXICILINA"}
+{"input": "Produto: AMOXI CILINA\nUSO ORAL", "expected": "AMOXICILINA"}
+{"input": "AMOXI CILINA\nVAL: 12/27", "expected": "AMOXICILINA"}
+{"input": "AMO XIC ILI NA 500 MG", "expected": "AMOXICILINA"}
+{"input": "Produto: AMO XIC ILI NA\nUSO ORAL", "expected": "AMOXICILINA"}
+{"input": "AMO XIC ILI NA\nVAL: 12/27", "expected": "AMOXICILINA"}
+{"input": "AMOXICILINA 500 MG", "expected": "AMOXICILINA"}
+{"input": "Produto: AMOXICILINA\nUSO ORAL", "expected": "AMOXICILINA"}
+{"input": "AMOXICILINA\nVAL: 12/27", "expected": "AMOXICILINA"}
+{"input": "ASPI RINA 500 MG", "expected": "ASPIRINA"}
+{"input": "Produto: ASPI RINA\nUSO ORAL", "expected": "ASPIRINA"}
+{"input": "ASPI RINA\nVAL: 12/27", "expected": "ASPIRINA"}
+{"input": "ASP IRI NA 500 MG", "expected": "ASPIRINA"}
+{"input": "Produto: ASP IRI NA\nUSO ORAL", "expected": "ASPIRINA"}
+{"input": "ASP IRI NA\nVAL: 12/27", "expected": "ASPIRINA"}
+{"input": "ASPIRINA 500 MG", "expected": "ASPIRINA"}
+{"input": "Produto: ASPIRINA\nUSO ORAL", "expected": "ASPIRINA"}
+{"input": "ASPIRINA\nVAL: 12/27", "expected": "ASPIRINA"}
+{"input": "ATORVA STATINA 500 MG", "expected": "ATORVASTATINA"}
+{"input": "Produto: ATORVA STATINA\nUSO ORAL", "expected": "ATORVASTATINA"}
+{"input": "ATORVA STATINA\nVAL: 12/27", "expected": "ATORVASTATINA"}
+{"input": "ATO RVA STA TIN A 500 MG", "expected": "ATORVASTATINA"}
+{"input": "Produto: ATO RVA STA TIN A\nUSO ORAL", "expected": "ATORVASTATINA"}
+{"input": "ATO RVA STA TIN A\nVAL: 12/27", "expected": "ATORVASTATINA"}
+{"input": "ATORVASTATINA 500 MG", "expected": "ATORVASTATINA"}
+{"input": "Produto: ATORVASTATINA\nUSO ORAL", "expected": "ATORVASTATINA"}
+{"input": "ATORVASTATINA\nVAL: 12/27", "expected": "ATORVASTATINA"}
+{"input": "CETIR IZINA 500 MG", "expected": "CETIRIZINA"}
+{"input": "Produto: CETIR IZINA\nUSO ORAL", "expected": "CETIRIZINA"}
+{"input": "CETIR IZINA\nVAL: 12/27", "expected": "CETIRIZINA"}
+{"input": "CET IRI ZIN A 500 MG", "expected": "CETIRIZINA"}
+{"input": "Produto: CET IRI ZIN A\nUSO ORAL", "expected": "CETIRIZINA"}
+{"input": "CET IRI ZIN A\nVAL: 12/27", "expected": "CETIRIZINA"}
+{"input": "CETIRIZINA 500 MG", "expected": "CETIRIZINA"}
+{"input": "Produto: CETIRIZINA\nUSO ORAL", "expected": "CETIRIZINA"}
+{"input": "CETIRIZINA\nVAL: 12/27", "expected": "CETIRIZINA"}
+{"input": "CRE STOR 500 MG", "expected": "CRESTOR"}
+{"input": "Produto: CRE STOR\nUSO ORAL", "expected": "CRESTOR"}
+{"input": "CRE STOR\nVAL: 12/27", "expected": "CRESTOR"}
+{"input": "CRE STO R 500 MG", "expected": "CRESTOR"}
+{"input": "Produto: CRE STO R\nUSO ORAL", "expected": "CRESTOR"}
+{"input": "CRE STO R\nVAL: 12/27", "expected": "CRESTOR"}
+{"input": "CRESTOR 500 MG", "expected": "CRESTOR"}
+{"input": "Produto: CRESTOR\nUSO ORAL", "expected": "CRESTOR"}
+{"input": "CRESTOR\nVAL: 12/27", "expected": "CRESTOR"}
+{"input": "DIPI RONA 500 MG", "expected": "DIPIRONA"}
+{"input": "Produto: DIPI RONA\nUSO ORAL", "expected": "DIPIRONA"}
+{"input": "DIPI RONA\nVAL: 12/27", "expected": "DIPIRONA"}
+{"input": "DIP IRO NA 500 MG", "expected": "DIPIRONA"}
+{"input": "Produto: DIP IRO NA\nUSO ORAL", "expected": "DIPIRONA"}
+{"input": "DIP IRO NA\nVAL: 12/27", "expected": "DIPIRONA"}
+{"input": "DIPIRONA 500 MG", "expected": "DIPIRONA"}
+{"input": "Produto: DIPIRONA\nUSO ORAL", "expected": "DIPIRONA"}
+{"input": "DIPIRONA\nVAL: 12/27", "expected": "DIPIRONA"}
+{"input": "DIPIRON A SODICA 500 MG", "expected": "DIPIRONA SODICA"}
+{"input": "Produto: DIPIRON A SODICA\nUSO ORAL", "expected": "DIPIRONA SODICA"}
+{"input": "DIPIRON A SODICA\nVAL: 12/27", "expected": "DIPIRONA SODICA"}
+{"input": "DIP IRO NA  SOD ICA 500 MG", "expected": "DIPIRONA SODICA"}
+{"input": "Produto: DIP IRO NA  SOD ICA\nUSO ORAL", "expected": "DIPIRONA SODICA"}
+{"input": "DIP IRO NA  SOD ICA\nVAL: 12/27", "expected": "DIPIRONA SODICA"}
+{"input": "DIPIRONA SODICA 500 MG", "expected": "DIPIRONA SODICA"}
+{"input": "Produto: DIPIRONA SODICA\nUSO ORAL", "expected": "DIPIRONA SODICA"}
+{"input": "DIPIRONA SODICA\nVAL: 12/27", "expected": "DIPIRONA SODICA"}
+{"input": "ENAL APRIL 500 MG", "expected": "ENALAPRIL"}
+{"input": "Produto: ENAL APRIL\nUSO ORAL", "expected": "ENALAPRIL"}
+{"input": "ENAL APRIL\nVAL: 12/27", "expected": "ENALAPRIL"}
+{"input": "ENA LAP RIL 500 MG", "expected": "ENALAPRIL"}
+{"input": "Produto: ENA LAP RIL\nUSO ORAL", "expected": "ENALAPRIL"}
+{"input": "ENA LAP RIL\nVAL: 12/27", "expected": "ENALAPRIL"}
+{"input": "ENALAPRIL 500 MG", "expected": "ENALAPRIL"}
+{"input": "Produto: ENALAPRIL\nUSO ORAL", "expected": "ENALAPRIL"}
+{"input": "ENALAPRIL\nVAL: 12/27", "expected": "ENALAPRIL"}
+{"input": "IBUPR OFENO 500 MG", "expected": "IBUPROFENO"}
+{"input": "Produto: IBUPR OFENO\nUSO ORAL", "expected": "IBUPROFENO"}
+{"input": "IBUPR OFENO\nVAL: 12/27", "expected": "IBUPROFENO"}
+{"input": "IBU PRO FEN O 500 MG", "expected": "IBUPROFENO"}
+{"input": "Produto: IBU PRO FEN O\nUSO ORAL", "expected": "IBUPROFENO"}
+{"input": "IBU PRO FEN O\nVAL: 12/27", "expected": "IBUPROFENO"}
+{"input": "IBUPROFENO 500 MG", "expected": "IBUPROFENO"}
+{"input": "Produto: IBUPROFENO\nUSO ORAL", "expected": "IBUPROFENO"}
+{"input": "IBUPROFENO\nVAL: 12/27", "expected": "IBUPROFENO"}
+{"input": "LOSA RTANA 500 MG", "expected": "LOSARTANA"}
+{"input": "Produto: LOSA RTANA\nUSO ORAL", "expected": "LOSARTANA"}
+{"input": "LOSA RTANA\nVAL: 12/27", "expected": "LOSARTANA"}
+{"input": "LOS ART ANA 500 MG", "expected": "LOSARTANA"}
+{"input": "Produto: LOS ART ANA\nUSO ORAL", "expected": "LOSARTANA"}
+{"input": "LOS ART ANA\nVAL: 12/27", "expected": "LOSARTANA"}
+{"input": "LOSARTANA 500 MG", "expected": "LOSARTANA"}
+{"input": "Produto: LOSARTANA\nUSO ORAL", "expected": "LOSARTANA"}
+{"input": "LOSARTANA\nVAL: 12/27", "expected": "LOSARTANA"}
+{"input": "META MIZOL 500 MG", "expected": "METAMIZOL"}
+{"input": "Produto: META MIZOL\nUSO ORAL", "expected": "METAMIZOL"}
+{"input": "META MIZOL\nVAL: 12/27", "expected": "METAMIZOL"}
+{"input": "MET AMI ZOL 500 MG", "expected": "METAMIZOL"}
+{"input": "Produto: MET AMI ZOL\nUSO ORAL", "expected": "METAMIZOL"}
+{"input": "MET AMI ZOL\nVAL: 12/27", "expected": "METAMIZOL"}
+{"input": "METAMIZOL 500 MG", "expected": "METAMIZOL"}
+{"input": "Produto: METAMIZOL\nUSO ORAL", "expected": "METAMIZOL"}
+{"input": "METAMIZOL\nVAL: 12/27", "expected": "METAMIZOL"}
+{"input": "METFO RMINA 500 MG", "expected": "METFORMINA"}
+{"input": "Produto: METFO RMINA\nUSO ORAL", "expected": "METFORMINA"}
+{"input": "METFO RMINA\nVAL: 12/27", "expected": "METFORMINA"}
+{"input": "MET FOR MIN A 500 MG", "expected": "METFORMINA"}
+{"input": "Produto: MET FOR MIN A\nUSO ORAL", "expected": "METFORMINA"}
+{"input": "MET FOR MIN A\nVAL: 12/27", "expected": "METFORMINA"}
+{"input": "METFORMINA 500 MG", "expected": "METFORMINA"}
+{"input": "Produto: METFORMINA\nUSO ORAL", "expected": "METFORMINA"}
+{"input": "METFORMINA\nVAL: 12/27", "expected": "METFORMINA"}
+{"input": "NIMES ULIDA 500 MG", "expected": "NIMESULIDA"}
+{"input": "Produto: NIMES ULIDA\nUSO ORAL", "expected": "NIMESULIDA"}
+{"input": "NIMES ULIDA\nVAL: 12/27", "expected": "NIMESULIDA"}
+{"input": "NIM ESU LID A 500 MG", "expected": "NIMESULIDA"}
+{"input": "Produto: NIM ESU LID A\nUSO ORAL", "expected": "NIMESULIDA"}
+{"input": "NIM ESU LID A\nVAL: 12/27", "expected": "NIMESULIDA"}
+{"input": "NIMESULIDA 500 MG", "expected": "NIMESULIDA"}
+{"input": "Produto: NIMESULIDA\nUSO ORAL", "expected": "NIMESULIDA"}
+{"input": "NIMESULIDA\nVAL: 12/27", "expected": "NIMESULIDA"}
+{"input": "NIS ULID 500 MG", "expected": "NISULID"}
+{"input": "Produto: NIS ULID\nUSO ORAL", "expected": "NISULID"}
+{"input": "NIS ULID\nVAL: 12/27", "expected": "NISULID"}
+{"input": "NIS ULI D 500 MG", "expected": "NISULID"}
+{"input": "Produto: NIS ULI D\nUSO ORAL", "expected": "NISULID"}
+{"input": "NIS ULI D\nVAL: 12/27", "expected": "NISULID"}
+{"input": "NISULID 500 MG", "expected": "NISULID"}
+{"input": "Produto: NISULID\nUSO ORAL", "expected": "NISULID"}
+{"input": "NISULID\nVAL: 12/27", "expected": "NISULID"}
+{"input": "NOVA LGINA 500 MG", "expected": "NOVALGINA"}
+{"input": "Produto: NOVA LGINA\nUSO ORAL", "expected": "NOVALGINA"}
+{"input": "NOVA LGINA\nVAL: 12/27", "expected": "NOVALGINA"}
+{"input": "NOV ALG INA 500 MG", "expected": "NOVALGINA"}
+{"input": "Produto: NOV ALG INA\nUSO ORAL", "expected": "NOVALGINA"}
+{"input": "NOV ALG INA\nVAL: 12/27", "expected": "NOVALGINA"}
+{"input": "NOVALGINA 500 MG", "expected": "NOVALGINA"}
+{"input": "Produto: NOVALGINA\nUSO ORAL", "expected": "NOVALGINA"}
+{"input": "NOVALGINA\nVAL: 12/27", "expected": "NOVALGINA"}
+{"input": "OMEP RAZOL 500 MG", "expected": "OMEPRAZOL"}
+{"input": "Produto: OMEP RAZOL\nUSO ORAL", "expected": "OMEPRAZOL"}
+{"input": "OMEP RAZOL\nVAL: 12/27", "expected": "OMEPRAZOL"}
+{"input": "OME PRA ZOL 500 MG", "expected": "OMEPRAZOL"}
+{"input": "Produto: OME PRA ZOL\nUSO ORAL", "expected": "OMEPRAZOL"}
+{"input": "OME PRA ZOL\nVAL: 12/27", "expected": "OMEPRAZOL"}
+{"input": "OMEPRAZOL 500 MG", "expected": "OMEPRAZOL"}
+{"input": "Produto: OMEPRAZOL\nUSO ORAL", "expected": "OMEPRAZOL"}
+{"input": "OMEPRAZOL\nVAL: 12/27", "expected": "OMEPRAZOL"}
+{"input": "PARAC ETAMOL 500 MG", "expected": "PARACETAMOL"}
+{"input": "Produto: PARAC ETAMOL\nUSO ORAL", "expected": "PARACETAMOL"}
+{"input": "PARAC ETAMOL\nVAL: 12/27", "expected": "PARACETAMOL"}
+{"input": "PAR ACE TAM OL 500 MG", "expected": "PARACETAMOL"}
+{"input": "Produto: PAR ACE TAM OL\nUSO ORAL", "expected": "PARACETAMOL"}
+{"input": "PAR ACE TAM OL\nVAL: 12/27", "expected": "PARACETAMOL"}
+{"input": "PARACETAMOL 500 MG", "expected": "PARACETAMOL"}
+{"input": "Produto: PARACETAMOL\nUSO ORAL", "expected": "PARACETAMOL"}
+{"input": "PARACETAMOL\nVAL: 12/27", "expected": "PARACETAMOL"}
+{"input": "ROS UCOR 500 MG", "expected": "ROSUCOR"}
+{"input": "Produto: ROS UCOR\nUSO ORAL", "expected": "ROSUCOR"}
+{"input": "ROS UCOR\nVAL: 12/27", "expected": "ROSUCOR"}
+{"input": "ROS UCO R 500 MG", "expected": "ROSUCOR"}
+{"input": "Produto: ROS UCO R\nUSO ORAL", "expected": "ROSUCOR"}
+{"input": "ROS UCO R\nVAL: 12/27", "expected": "ROSUCOR"}
+{"input": "ROSUCOR 500 MG", "expected": "ROSUCOR"}
+{"input": "Produto: ROSUCOR\nUSO ORAL", "expected": "ROSUCOR"}
+{"input": "ROSUCOR\nVAL: 12/27", "expected": "ROSUCOR"}
+{"input": "ROSU CORE 500 MG", "expected": "ROSUCORE"}
+{"input": "Produto: ROSU CORE\nUSO ORAL", "expected": "ROSUCORE"}
+{"input": "ROSU CORE\nVAL: 12/27", "expected": "ROSUCORE"}
+{"input": "ROS UCO RE 500 MG", "expected": "ROSUCORE"}
+{"input": "Produto: ROS UCO RE\nUSO ORAL", "expected": "ROSUCORE"}
+{"input": "ROS UCO RE\nVAL: 12/27", "expected": "ROSUCORE"}
+{"input": "ROSUCORE 500 MG", "expected": "ROSUCORE"}
+{"input": "Produto: ROSUCORE\nUSO ORAL", "expected": "ROSUCORE"}
+{"input": "ROSUCORE\nVAL: 12/27", "expected": "ROSUCORE"}
+{"input": "ROSUVA STATINA 500 MG", "expected": "ROSUVASTATINA"}
+{"input": "Produto: ROSUVA STATINA\nUSO ORAL", "expected": "ROSUVASTATINA"}
+{"input": "ROSUVA STATINA\nVAL: 12/27", "expected": "ROSUVASTATINA"}
+{"input": "ROS UVA STA TIN A 500 MG", "expected": "ROSUVASTATINA"}
+{"input": "Produto: ROS UVA STA TIN A\nUSO ORAL", "expected": "ROSUVASTATINA"}
+{"input": "ROS UVA STA TIN A\nVAL: 12/27", "expected": "ROSUVASTATINA"}
+{"input": "ROSUVASTATINA 500 MG", "expected": "ROSUVASTATINA"}
+{"input": "Produto: ROSUVASTATINA\nUSO ORAL", "expected": "ROSUVASTATINA"}
+{"input": "ROSUVASTATINA\nVAL: 12/27", "expected": "ROSUVASTATINA"}
+{"input": "ROSUVASTAT INA CALCICA 500 MG", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "Produto: ROSUVASTAT INA CALCICA\nUSO ORAL", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "ROSUVASTAT INA CALCICA\nVAL: 12/27", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "ROS UVA STA TIN A C ALC ICA 500 MG", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "Produto: ROS UVA STA TIN A C ALC ICA\nUSO ORAL", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "ROS UVA STA TIN A C ALC ICA\nVAL: 12/27", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "ROSUVASTATINA CALCICA 500 MG", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "Produto: ROSUVASTATINA CALCICA\nUSO ORAL", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "ROSUVASTATINA CALCICA\nVAL: 12/27", "expected": "ROSUVASTATINA CALCICA"}
+{"input": "SINVAS TATINA 500 MG", "expected": "SINVASTATINA"}
+{"input": "Produto: SINVAS TATINA\nUSO ORAL", "expected": "SINVASTATINA"}
+{"input": "SINVAS TATINA\nVAL: 12/27", "expected": "SINVASTATINA"}
+{"input": "SIN VAS TAT INA 500 MG", "expected": "SINVASTATINA"}
+{"input": "Produto: SIN VAS TAT INA\nUSO ORAL", "expected": "SINVASTATINA"}
+{"input": "SIN VAS TAT INA\nVAL: 12/27", "expected": "SINVASTATINA"}
+{"input": "SINVASTATINA 500 MG", "expected": "SINVASTATINA"}
+{"input": "Produto: SINVASTATINA\nUSO ORAL", "expected": "SINVASTATINA"}
+{"input": "SINVASTATINA\nVAL: 12/27", "expected": "SINVASTATINA"}
+{"input": "TYL ENOL 500 MG", "expected": "TYLENOL"}
+{"input": "Produto: TYL ENOL\nUSO ORAL", "expected": "TYLENOL"}
+{"input": "TYL ENOL\nVAL: 12/27", "expected": "TYLENOL"}
+{"input": "TYL ENO L 500 MG", "expected": "TYLENOL"}
+{"input": "Produto: TYL ENO L\nUSO ORAL", "expected": "TYLENOL"}
+{"input": "TYL ENO L\nVAL: 12/27", "expected": "TYLENOL"}
+{"input": "TYLENOL 500 MG", "expected": "TYLENOL"}
+{"input": "Produto: TYLENOL\nUSO ORAL", "expected": "TYLENOL"}
+{"input": "TYLENOL\nVAL: 12/27", "expected": "TYLENOL"}
+{"input": "Embalagem ilegivel", "expected": "NAO IDENTIFICADO"}

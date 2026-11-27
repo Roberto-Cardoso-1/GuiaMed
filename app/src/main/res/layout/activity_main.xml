@@ -6,17 +6,35 @@
     android:layout_height="match_parent"
     android:background="@color/black">
 
+    <!-- Limita o painel de texto a no máximo 42% da tela para exibir instruções inteiras sem esmagar a câmera -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/panelMaxGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.42" />
+
     <include
         android:id="@+id/readingPanel"
         layout="@layout/reading_panel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:layout_constrainedHeight="true"
-        app:layout_constraintBottom_toTopOf="@id/gesturePanel"
+        app:layout_constraintBottom_toTopOf="@id/panelMaxGuideline"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0" />
+
+    <View
+        android:id="@+id/panelCameraDivider"
+        android:layout_width="0dp"
+        android:layout_height="2dp"
+        android:background="@color/yellow_high_contrast"
+        android:importantForAccessibility="no"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/readingPanel" />
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
@@ -28,22 +46,21 @@
         app:layout_constraintBottom_toTopOf="@id/gesturePanel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/readingPanel"
-        app:scaleType="fitCenter" />
+        app:layout_constraintTop_toBottomOf="@id/panelCameraDivider"
+        app:scaleType="fillCenter" />
 
     <View
         android:id="@+id/framingGuide"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="44dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="44dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/camera_framing_guide"
         android:importantForAccessibility="no"
         android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="@id/previewView"
-        app:layout_constraintDimensionRatio="4:5"
+        app:layout_constraintBottom_toTopOf="@id/cameraGuideLabel"
         app:layout_constraintEnd_toEndOf="@id/previewView"
         app:layout_constraintStart_toStartOf="@id/previewView"
         app:layout_constraintTop_toTopOf="@id/previewView" />
@@ -52,44 +69,51 @@
         android:id="@+id/cameraGuideLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/camera_guide_label_background"
+        android:ellipsize="end"
         android:fontFamily="sans-serif-medium"
         android:importantForAccessibility="no"
-        android:letterSpacing="0.08"
-        android:paddingStart="14dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="8dp"
+        android:letterSpacing="0.06"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="5dp"
         android:text="@string/camera_guide_label"
         android:textAllCaps="true"
         android:textColor="@color/yellow_high_contrast"
-        android:textSize="14sp"
+        android:textSize="11sp"
         android:visibility="invisible"
-        app:layout_constraintEnd_toEndOf="@id/framingGuide"
-        app:layout_constraintStart_toStartOf="@id/framingGuide"
-        app:layout_constraintTop_toTopOf="@id/framingGuide" />
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toBottomOf="@id/previewView"
+        app:layout_constraintEnd_toEndOf="@id/previewView"
+        app:layout_constraintStart_toStartOf="@id/previewView" />
 
     <LinearLayout
         android:id="@+id/gesturePanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/black"
+        android:importantForAccessibility="noHideDescendants"
         android:orientation="vertical"
+        android:paddingBottom="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="3dp"
+            android:layout_height="2dp"
             android:background="@color/yellow_high_contrast"
             android:importantForAccessibility="no" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:importantForAccessibility="no"
@@ -97,22 +121,116 @@
             android:text="@string/gesture_heading"
             android:textAllCaps="true"
             android:textColor="@color/yellow_high_contrast"
-            android:textSize="13sp" />
+            android:textSize="11sp" />
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:breakStrategy="high_quality"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"
-            android:hyphenationFrequency="none"
-            android:lineSpacingExtra="5dp"
-            android:paddingStart="20dp"
-            android:paddingTop="7dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="16dp"
-            android:text="@string/touch_instructions"
-            android:textColor="@color/yellow_high_contrast"
-            android:textSize="20sp" />
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/gesture_chip_background"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:maxLines="1"
+                android:paddingStart="6dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="6dp"
+                android:text="@string/shortcut_package"
+                android:textColor="@color/yellow_high_contrast"
+                android:textSize="14sp"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="11sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/gesture_chip_background"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:maxLines="1"
+                android:paddingStart="6dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="6dp"
+                android:text="@string/shortcut_prescription"
+                android:textColor="@color/yellow_high_contrast"
+                android:textSize="14sp"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="11sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/gesture_chip_background"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:maxLines="1"
+                android:paddingStart="6dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="6dp"
+                android:text="@string/shortcut_allergy"
+                android:textColor="@color/yellow_high_contrast"
+                android:textSize="14sp"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="11sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/gesture_chip_background"
+                android:fontFamily="sans-serif-medium"
+                android:gravity="center"
+                android:importantForAccessibility="no"
+                android:maxLines="1"
+                android:paddingStart="6dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="6dp"
+                android:text="@string/shortcut_help"
+                android:textColor="@color/yellow_high_contrast"
+                android:textSize="14sp"
+                app:autoSizeMaxTextSize="14sp"
+                app:autoSizeMinTextSize="11sp"
+                app:autoSizeStepGranularity="1sp"
+                app:autoSizeTextType="uniform" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -10,5 +10,6 @@
 
 ## v1 — anterior
 
-- Solicitava apenas um resumo breve dos trechos recuperados.
-- Não tinha regra explícita de segurança nem resposta de fallback.
+- Solicitava apenas cópia literal breve de uma sentença do trecho recuperado (aceitando citação opcional `Fonte: <fonte>`).
+- Não tinha regra explícita contra instruções hostis dentro dos dados nem instrução de recusa `SEM EVIDENCIA`.
+- Na comparação pareada com trie extrativo igual para ambas as versões, `v1` selecionou seção incorreta em `RAG-03` (*Cardiovast*), enquanto `v2` selecionou `cardiovast#interacoes` em 3/3 repetições.
