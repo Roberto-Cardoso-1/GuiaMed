@@ -1,6 +1,7 @@
 package com.guiamed.data
 
 import com.guiamed.BuildConfig
+import com.guiamed.ocr.ReadBudget
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -22,7 +23,13 @@ interface GuiaMedApi {
     suspend fun lerReceita(@Body request: ReceitaRequest): ReceitaResponse
 
     companion object {
-        private const val TIMEOUT_SECONDS = 15L
+        internal fun httpClient(): OkHttpClient = OkHttpClient.Builder()
+            .retryOnConnectionFailure(false)
+            .callTimeout(ReadBudget.HTTP_MILLIS, TimeUnit.MILLISECONDS)
+            .connectTimeout(2_000, TimeUnit.MILLISECONDS)
+            .readTimeout(ReadBudget.HTTP_MILLIS, TimeUnit.MILLISECONDS)
+            .writeTimeout(ReadBudget.HTTP_MILLIS, TimeUnit.MILLISECONDS)
+            .build()
 
         fun create(): GuiaMedApi {
             val logging = HttpLoggingInterceptor().apply {
@@ -30,11 +37,8 @@ interface GuiaMedApi {
                 level = HttpLoggingInterceptor.Level.NONE
             }
 
-            val client = OkHttpClient.Builder()
+            val client = httpClient().newBuilder()
                 .addInterceptor(logging)
-                .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .build()
 
             val gson = GsonBuilder()

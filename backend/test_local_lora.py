@@ -99,19 +99,9 @@ class LoraRuntimeTests(unittest.TestCase):
             })
             self.assertEqual(response.status_code, 200)
 
-    def test_gguf_selection_uses_raw_prompt_without_bos(self):
-        with TemporaryDirectory() as directory:
-            gguf = Path(directory) / "model.gguf"
-            gguf.touch()
-            model = Mock(return_value={"choices": [{"text": " Novalgina"}]})
-            model.tokenize.return_value = [1, 2]
-            factory = Mock(return_value=model)
-            with patch.dict(sys.modules, {"llama_cpp": SimpleNamespace(Llama=factory)}):
-                runtime = LocalLora.load(gguf, 2)
-                self.assertEqual(runtime.suggest("NO VAL GI NA"), "Novalgina")
-            model.tokenize.assert_called_once()
-            self.assertEqual(model.tokenize.call_args.kwargs, {"add_bos": False, "special": False})
-            factory.assert_called_once_with(model_path=str(gguf), n_ctx=1024, n_threads=2, verbose=False)
+    def test_legacy_gguf_is_not_loaded_with_real_catalog_prompt(self):
+        with self.assertRaisesRegex(ValueError, "legado incompat"):
+            LocalLora.load(Path("guiamed-lora-v2-f16.gguf"), 2)
 
     def test_busy_runtime_and_generation_failure_fall_back(self):
         generate = Mock(side_effect=RuntimeError("erro interno"))

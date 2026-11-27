@@ -1,0 +1,127 @@
+{
+  "startup_ms": 4515.772799999468,
+  "records": [
+    {
+      "path": "/health",
+      "status": 200,
+      "ia": "ready",
+      "json": {
+        "status": "ok",
+        "database": "memory",
+        "timestamp": "2026-11-26T11:09:37.090936"
+      }
+    },
+    {
+      "path": "/alergias",
+      "status": 200,
+      "ms": 2.112699999997858,
+      "ia": "ready",
+      "json": {
+        "sucesso": true,
+        "mensagem": "Alergia a metamizol registrada com sucesso.",
+        "alergias_registradas": [
+          "metamizol"
+        ]
+      }
+    },
+    {
+      "path": "/verificar",
+      "status": 200,
+      "ms": 361.73799999960465,
+      "ia": "ready",
+      "json": {
+        "nome": "Dipirona Sódica",
+        "miligramas": "500mg",
+        "validade": "10/2026",
+        "vencido": true,
+        "alerta_alergia": true,
+        "componentes": [
+          "dipirona",
+          "metamizol"
+        ],
+        "posologia": null,
+        "mensagem": "Medicamento vencido. Alerta de alergia detectado.",
+        "perigo": true
+      }
+    },
+    {
+      "path": "/receita",
+      "status": 200,
+      "ms": 846.3159000002634,
+      "ia": "ready",
+      "json": {
+        "medicamentos": [
+          {
+            "nome": "Omeprazol",
+            "dosagem": "20mg",
+            "frequencia": "a noite",
+            "duracao": null,
+            "instrucoes": "a noite"
+          },
+          {
+            "nome": "Dipirona Sódica",
+            "dosagem": "500mg",
+            "frequencia": "a cada 8 horas",
+            "duracao": null,
+            "instrucoes": null
+          },
+          {
+            "nome": "Paracetamol",
+            "dosagem": "750mg",
+            "frequencia": "a cada 12 horas",
+            "duracao": null,
+            "instrucoes": null
+          }
+        ],
+        "posologia_completa": "Omeprazol 20mg a noite a noite. Dipirona Sódica 500mg a cada 8 horas. Paracetamol 750mg a cada 12 horas",
+        "horarios": [],
+        "mensagem": "Receita processada com sucesso."
+      }
+    },
+    {
+      "path": "/verificar",
+      "status": 200,
+      "ms": 2.701800000068033,
+      "ia": "ready",
+      "json": {
+        "nome": "Medicamento não identificado com segurança",
+        "miligramas": "500mg",
+        "validade": null,
+        "vencido": false,
+        "alerta_alergia": false,
+        "componentes": [],
+        "posologia": null,
+        "mensagem": "Não consegui identificar o medicamento com segurança. Reposicione a caixa e tente novamente.",
+        "perigo": false
+      }
+    },
+    {
+      "path": "/verificar",
+      "status": 200,
+      "ms": 452.7862999993886,
+      "ia": "ready",
+      "json": {
+        "nome": "Dipirona Sódica",
+        "miligramas": "500mg",
+        "validade": "12/2027",
+        "vencido": false,
+        "alerta_alergia": true,
+        "componentes": [
+          "dipirona",
+          "metamizol"
+        ],
+        "posologia": null,
+        "mensagem": "Alerta de alergia detectado.",
+        "perigo": true
+      }
+    }
+  ],
+  "deadline_probe": {
+    "budget_ms": 1,
+    "elapsed_ms": 139.99999999941792,
+    "answer_discarded": true,
+    "state": "deadline",
+    "lock_released": true
+  },
+  "passed": true
+}

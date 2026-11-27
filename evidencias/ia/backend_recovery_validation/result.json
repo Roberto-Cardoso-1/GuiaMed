@@ -1,0 +1,14 @@
+{
+  "command": [
+    "C:\\meu-sistema\\.tools\\finetuning-venv\\Scripts\\python.exe",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "C:\\meu-sistema\\GuiaMed\\backend",
+    "-v"
+  ],
+  "exit_code": 0,
+  "utc": "2026-11-26T23:21:17.740583+00:00",
+  "python": "3.12.16 (main, Nov 11 2026, 00:20:04) [MSC v.1944 64 bit (AMD64)]"
+}

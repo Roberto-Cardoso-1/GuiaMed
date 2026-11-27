@@ -221,4 +221,35 @@ class OfflineMedicationProcessorTest {
             LocalAllergyStore.cleanSpokenName("Eu tenho alergia a dipirona"),
         )
     }
+
+    @Test
+    fun readsLargeFrontDosageSplitAcrossLinesAndPackageDescriptors() {
+        val multilineSplit = processor.verify(
+            textOcr = "DIPIRONA SODICA\nMEDICAMENTO GENERICO\n30 COMPRIMIDOS\nUSO ORAL\n5OO\nmg",
+            allergies = emptySet(),
+        )
+        assertEquals("Dipirona Sódica", multilineSplit.nome)
+        assertEquals("500mg", multilineSplit.miligramas)
+
+        val dosageBeforeName = processor.verify(
+            textOcr = "20 MG\nMEDICAMENTO GENERICO\nROSUVASTATINA CALCICA\nCOMPRIMIDO REVESTIDO",
+            allergies = emptySet(),
+        )
+        assertEquals("Rosuvastatina Cálcica", dosageBeforeName.nome)
+        assertEquals("20mg", dosageBeforeName.miligramas)
+
+        val noisyGiantFont = processor.verify(
+            textOcr = "PARACETAMOL\n5 00 mq\nUSO ADULTO",
+            allergies = emptySet(),
+        )
+        assertEquals("Paracetamol", noisyGiantFont.nome)
+        assertEquals("500mg", noisyGiantFont.miligramas)
+
+        val concentrationAndBottle = processor.verify(
+            textOcr = "DIPIRONA SODICA\n500 MG/ML\nSOLUCAO ORAL\nFRASCO 20 ML",
+            allergies = emptySet(),
+        )
+        assertEquals("Dipirona Sódica", concentrationAndBottle.nome)
+        assertEquals("500mg/ml", concentrationAndBottle.miligramas)
+    }
 }

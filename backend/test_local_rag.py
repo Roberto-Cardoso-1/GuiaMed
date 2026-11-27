@@ -1,13 +1,22 @@
 import unittest
+import json
 
 from local_rag import LocalRag, PROMPT_VERSION
 from main import anonymize_device_id
+from rag_llm import Generation
+
+
+class CopyGenerator:
+    def generate(self, messages, *, timeout_ms):
+        chunk = json.loads(messages[1]["content"])["chunks"][0]
+        source, content = chunk["fonte"], chunk["texto"]
+        return Generation(f"{content} Fonte: {source}.", 100, 30)
 
 
 class LocalRagTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.rag = LocalRag()
+        cls.rag = LocalRag(generator=CopyGenerator())
 
     def test_index_contains_six_sections_for_each_fictitious_medicine(self) -> None:
         self.assertEqual(144, len(self.rag.chunks))

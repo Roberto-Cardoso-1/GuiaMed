@@ -48,26 +48,24 @@ internal class OfflineMedicationProcessor internal constructor(
             "USO",
         )
 
-        fun fromContext(context: Context): OfflineMedicationProcessor {
-            val names = runCatching {
+        fun loadDcbNames(context: Context): List<String> = runCatching {
                 val listType = object : TypeToken<List<DcbCatalogItem>>() {}.type
                 context.assets.open("dcb_medicamentos.json").bufferedReader().use { reader ->
                     val items: List<DcbCatalogItem> = Gson().fromJson(reader, listType)
                     items.map { it.nome }
                 }
             }.getOrDefault(emptyList())
-            val eanNames = try {
+
+        fun loadEanNames(context: Context): Map<String, EanMedication> = try {
                 context.assets.open("medicamentos_ean.tsv").bufferedReader().useLines { lines ->
                     lines.filterNot { it.startsWith('#') }.associate { row ->
                         val (ean, product, substances) = row.split('	', limit = 3)
                         ean to EanMedication(product, substances.split(';'))
                     }
                 }
-            } catch (_: java.io.FileNotFoundException) {
+            } catch (_: Exception) {
                 emptyMap()
             }
-            return OfflineMedicationProcessor(names, eanNames)
-        }
     }
 
     private val curatedMedicines = listOf(
@@ -166,7 +164,6 @@ internal class OfflineMedicationProcessor internal constructor(
         ean: String? = null,
         allowFuzzy: Boolean = true,
     ): VerificarResponse {
-        val normalized = normalize(textOcr)
         val textMedicine = findMedicineFromOcr(textOcr, allowFuzzy)
         val barcodeMedicine = ean?.let(medicationByEan::get)?.let { record ->
             val knownBySubstance = record.substances.flatMap { substance ->
@@ -185,7 +182,9 @@ internal class OfflineMedicationProcessor internal constructor(
         val possibleAllergy = conflicting && listOfNotNull(textMedicine, barcodeMedicine).any {
             hasAllergy(allergies, it.aliases + it.components + it.name)
         }
-        val dosage = if (barcodeMedicine == null || agreesWithBarcode) extractDosage(normalized) else null
+        val dosage = if (textMedicine != null && (barcodeMedicine == null || agreesWithBarcode)) {
+            extractPackageDosage(textOcr, textMedicine, allowFuzzy)
+        } else null
         val expiration = ExpirationReader.findDates(textOcr).singleOrNull()
         val validity = expiration?.label
         val expired = expiration?.isExpired(referenceDate) == true
@@ -243,12 +242,50 @@ internal class OfflineMedicationProcessor internal constructor(
         item.nome.takeIf { hasAllergy(allergies, targets) }
     }
 
+    internal fun corroboratedRecipeName(name: String, textOcr: String): String? {
+        val normalized = normalize(name)
+        val medicine = curatedByName[normalized] ?: exactDcbIndex[normalized] ?: return null
+        val text = normalize(textOcr)
+        // Permit separated letters (NO VAL GI NA), never an approximate unrelated name.
+        val supported = (medicine.aliases + medicine.name).any { alias ->
+            val letters = normalize(alias).filterNot(Char::isWhitespace)
+            val pattern = letters.map { Regex.escape(it.toString()) }.joinToString("\\s*")
+            Regex("(?<![A-Z0-9])$pattern(?![A-Z0-9])").containsMatchIn(text)
+        }
+        return medicine.name.takeIf { supported }
+    }
+
+    internal fun prescriptionEvidence(name: String, textOcr: String): MedicamentoReceita? {
+        val lines = textOcr.lines()
+        val index = lines.indexOfFirst { corroboratedRecipeName(name, it) != null }
+        if (index < 0) return null
+        val canonical = corroboratedRecipeName(name, lines[index]) ?: return null
+        val block = mutableListOf("$canonical ${lines[index]}")
+        // Only explicit continuation instructions belong to this item. An unrecognized
+        // neighbor or a bare dose on another line must never supply this item's fields.
+        val continuation = Regex("^(TOMAR|TOME|USAR|USE|ADMINISTRAR|A CADA|DE \\d|POR \\d|DURACAO|HORARIOS)\\b")
+        for (line in lines.drop(index + 1).take(3)) {
+            if (!continuation.containsMatchIn(normalize(line)) || parseRecipe(line).medicamentos.isNotEmpty()) break
+            block += line
+        }
+        return parseRecipe(block.joinToString("\n")).medicamentos
+            .singleOrNull { normalize(it.nome) == normalize(canonical) }
+    }
+
+    internal fun hasUnrecognizedPrescriptionLine(textOcr: String, local: ReceitaResponse): Boolean {
+        val known = local.medicamentos.map { normalize(it.nome) }.toSet()
+        return textOcr.lineSequence().any { line ->
+            val normalized = normalize(line)
+            // A drug-like line with a dose is useful remote evidence even if another
+            // already-recognized item has all its fields. Administrative prose is skipped.
+            extractDosage(normalized) != null && Regex("[A-Z]{3,}").containsMatchIn(normalized) &&
+                !Regex("^(TOMAR|TOME|USAR|USE|ADMINISTRAR)\\b").containsMatchIn(normalized) &&
+                parseRecipe(line).medicamentos.none { normalize(it.nome) in known }
+        }
+    }
+
     internal fun parseRecipe(textOcr: String): ReceitaResponse {
-        val normalizedLines = textOcr.lineSequence()
-            .map(::normalize)
-            .filter(String::isNotBlank)
-            .toList()
-            .ifEmpty { listOf(normalize(textOcr)) }
+        val normalizedLines = medicationLines(textOcr)
 
         val detected = normalizedLines.map { line ->
             findMedicine(line, prescription = true)
@@ -259,13 +296,7 @@ internal class OfflineMedicationProcessor internal constructor(
         detected.forEachIndexed { lineIndex, medicine ->
             if (medicine == null || !seen.add(medicine.name)) return@forEachIndexed
 
-            val blockLines = mutableListOf(normalizedLines[lineIndex])
-            for (nextIndex in lineIndex + 1 until minOf(lineIndex + 4, normalizedLines.size)) {
-                val nextMedicine = detected[nextIndex]
-                if (nextMedicine != null && nextMedicine.name != medicine.name) break
-                blockLines += normalizedLines[nextIndex]
-            }
-            val context = blockLines.joinToString(" ")
+            val context = medicationBlock(normalizedLines, lineIndex, medicine, allowFuzzy = true)
 
             medicines += MedicamentoReceita(
                 nome = medicine.name,
@@ -317,6 +348,197 @@ internal class OfflineMedicationProcessor internal constructor(
         )
     }
 
+    private fun extractPackageDosage(
+        textOcr: String,
+        medicine: Medicine,
+        allowFuzzy: Boolean,
+    ): String? {
+        val lines = medicationLines(textOcr)
+        val matchedBlocks = mutableListOf<String>()
+        var index = 0
+        while (index < lines.size) {
+            val line = lines[index]
+            if (findMedicine(line, allowFuzzy = allowFuzzy)?.name == medicine.name) {
+                matchedBlocks += medicationBlock(lines, index, medicine, allowFuzzy, packageLayout = true)
+                index += 1
+                continue
+            }
+            if (index + 1 < lines.size &&
+                findMedicine(line, allowFuzzy = false) == null &&
+                findMedicine(lines[index + 1], allowFuzzy = false) == null
+            ) {
+                val combined = "${line} ${lines[index + 1]}"
+                if (findMedicine(combined, allowFuzzy = allowFuzzy)?.name == medicine.name) {
+                    val synthetic = lines.toMutableList().apply {
+                        this[index] = combined
+                        removeAt(index + 1)
+                    }
+                    matchedBlocks += medicationBlock(synthetic, index, medicine, allowFuzzy, packageLayout = true)
+                    index += 2
+                    continue
+                }
+            }
+            index += 1
+        }
+        val candidates = matchedBlocks
+            .flatMap(::extractAllDosages)
+            .distinctBy { it.value }
+        return resolvePrioritizedDosage(candidates)
+    }
+
+    private fun medicationLines(text: String): List<String> {
+        val rawSegments = text.splitToSequence(Regex("""[\n;]+"""))
+            .flatMap { segment ->
+                segment.trim().split(
+                    Regex("""\s+(?=(?:\(\d{1,3}\)|\[\d{1,3}\]|\d{1,3}\s*[.)\-:]|[A-Za-z][.)]|[-*•●▪‣–—])\s*[^\W\d_])"""),
+                ).asSequence()
+            }
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .toList()
+
+        // Une número grande e unidade separados em linhas adjacentes pelo OCR da caixa (ex.: "5OO\nmg").
+        val mergedSegments = mutableListOf<String>()
+        var index = 0
+        while (index < rawSegments.size) {
+            val current = rawSegments[index]
+            val next = rawSegments.getOrNull(index + 1)
+            if (next != null && isStandaloneNumberSegment(current) && isStandaloneUnitSegment(next)) {
+                mergedSegments += "$current $next"
+                index += 2
+            } else {
+                mergedSegments += current
+                index += 1
+            }
+        }
+        return mergedSegments.map(::normalize).filter(String::isNotBlank)
+    }
+
+    private fun isStandaloneNumberSegment(segment: String): Boolean {
+        val ascii = stripAccentsToUpper(segment).trim()
+        return Regex("""^[0-9OIL]{1,5}(?:[.,][0-9OIL]{1,3})?$""").matches(ascii)
+    }
+
+    private fun isStandaloneUnitSegment(segment: String): Boolean {
+        val ascii = stripAccentsToUpper(segment).trim()
+        return Regex("""^(?:MCG|MG|G|ML|UI|RNG|M9|MQ)(?:\s*/\s*(?:\d{1,3}\s*)?(?:MCG|MG|G|ML|DOSE))?$""").matches(ascii)
+    }
+
+    private fun medicationBlock(
+        lines: List<String>,
+        start: Int,
+        medicine: Medicine,
+        allowFuzzy: Boolean,
+        packageLayout: Boolean = false,
+    ): String {
+        val first = textFromIdentity(lines[start], medicine, allowFuzzy) ?: return ""
+        val block = mutableListOf<String>()
+
+        if (packageLayout) {
+            // Na frente da caixa a dosagem isolada pode vir acima de descritores neutros e do nome.
+            for (back in start - 1 downTo maxOf(0, start - 3)) {
+                val previousLine = lines[back]
+                if (findMedicine(previousLine, allowFuzzy = allowFuzzy) != null) break
+                if (isPackageDescriptorLine(previousLine)) continue
+                if (isPureStandaloneDosageLine(previousLine)) {
+                    val lineBeforeDose = lines.getOrNull(back - 1)
+                    if (lineBeforeDose == null || isPackageDescriptorLine(lineBeforeDose)) {
+                        block += previousLine
+                    }
+                    break
+                }
+                break
+            }
+        }
+
+        block += first
+        val lookahead = if (packageLayout) 7 else 4
+        for (index in start + 1 until minOf(start + lookahead, lines.size)) {
+            val line = lines[index]
+            val next = findMedicine(line, allowFuzzy = allowFuzzy)
+            if (next != null) {
+                if (next.name != medicine.name) break
+                block += textFromIdentity(line, medicine, allowFuzzy) ?: break
+            } else {
+                val prefix = block.joinToString(" ")
+                val identityContinuation = (medicine.aliases + medicine.name).any { alias ->
+                    val normalizedAlias = normalize(alias)
+                    if (!normalizedAlias.startsWith("$prefix ")) false else {
+                        val suffix = normalizedAlias.removePrefix("$prefix ")
+                        line == suffix || (line.startsWith("$suffix ") &&
+                            (isMedicationContinuation(line.removePrefix(suffix).trim()) ||
+                                (packageLayout && isPackageDescriptorLine(line.removePrefix(suffix).trim()))))
+                    }
+                }
+                val validContinuation = isMedicationContinuation(line) ||
+                    (packageLayout && isPackageDescriptorLine(line))
+                // Unknown headings (with or without an item marker) terminate the block.
+                if (!identityContinuation && !validContinuation) break
+                block += line
+            }
+        }
+        return block.joinToString(" ")
+    }
+
+    private fun isMedicationContinuation(line: String): Boolean {
+        val content = line.replace(Regex("""^[-–—•]\s*"""), "")
+        return Regex(
+            """^(?:\d{1,5}(?:[.,]\d+)?\s*(?:MCG|MG|G|ML|UI)(?:\s*/\s*(?:\d{1,3}\s*)?(?:MCG|MG|G|ML|DOSE))?\b|""" +
+                """TOMAR\b|TOME\b|USAR\b|USE\b|APLICAR\b|INGERIR\b|ADMINISTRAR\b|USO\b|""" +
+                """FREQUENCIA\b|POSOLOGIA\b|DURACAO\b|HORARIOS?\b|A CADA\b|DE \d{1,2}\b|""" +
+                """POR \d|DURANTE \d|\d{1,2}\s*/\s*\d{1,2}\s*H\b|""" +
+                """(?:\d{1,2}|UMA|DUAS|TRES)\s*(?:X|VEZ|VEZES)\b|""" +
+                """TODOS OS DIAS\b|DIARIAMENTE\b|PELA MANHA\b|[AÀ] NOITE\b|""" +
+                """DE MANHA\b|DE TARDE\b|A TARDE\b|DE NOITE\b|AO DEITAR\b|""" +
+                """ANTES DE DORMIR\b|APOS AS? REFEICOES?\b|ANTES DAS? REFEICOES?\b|EM JEJUM\b|VIA ORAL\b)""",
+        ).containsMatchIn(content)
+    }
+
+    private fun isPackageDescriptorLine(line: String): Boolean {
+        if (Regex("""^(?:\(\d{1,3}\)|\[\d{1,3}\]|\d{1,3}\s*[.)\-:]|[A-Z][.)]|[-*•●▪‣–—])\s*""").containsMatchIn(line)) {
+            return false
+        }
+        return Regex(
+            """^(?:MEDICAMENTO\s+GENERICO|GENERICO|SIMILAR|REFERENCIA|LEI\s+N.*|""" +
+                """USO\s+(?:ORAL|ADULTO|PEDIATRICO|ADULTO\s+E\s+PEDIATRICO|TOPICO|EXTERNO|DERMATOLOGICO|OFTALMICO|NASAL)|""" +
+                """VIA\s+(?:ORAL|TOPICA)|SOLUCAO\s+(?:ORAL|INJETAVEL|NASAL|OFTALMICA)|""" +
+                """SUSPENSAO\s+ORAL|EMULSAO\s+ORAL|GOTAS|XAROPE|CREME|POMADA|GEL|SPRAY|AEROSSOL|""" +
+                """COMPRIMIDOS?(?:\s+(?:REVESTIDOS?|EFERVESCENTES?|MASTIGAVEIS?|SUBLINGUAIS?|SIMPLES|ORODISPERSIVEIS?))?|""" +
+                """CAPSULAS?(?:\s+(?:DURAS?|MOLES?|GELATINOSAS?))?|""" +
+                """(?:(?:CONTEM|EMBALAGEM\s+COM)\s+)?\d{1,3}\s+""" +
+                """(?:COMPRIMIDOS?|CAPSULAS?|DRAGEAS?|AMPOLAS?|FLACONETES?|FRASCOS?|SACHES?|ENVELOPES?|ADESIVOS?|UNIDADES?)""" +
+                """(?:\s+(?:REVESTIDOS?|DURAS?|MOLES?))?)$""",
+        ).matches(line.trim())
+    }
+
+    private fun isPureStandaloneDosageLine(line: String): Boolean =
+        Regex("""^\d{1,5}(?:[.,]\d+)?\s*(?:MCG|MG|G|ML|UI)(?:\s*/\s*(?:\d{1,3}\s*)?(?:MCG|MG|G|ML|DOSE))?$""")
+            .matches(line.trim())
+
+    private fun stripAccentsToUpper(value: String): String =
+        Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replace(Regex("""\p{M}+"""), "")
+            .uppercase(Locale.ROOT)
+
+    private fun textFromIdentity(line: String, medicine: Medicine, allowFuzzy: Boolean): String? {
+        val exactStart = (medicine.aliases + medicine.name).mapNotNull { alias ->
+            Regex("(?<![A-Z0-9])${Regex.escape(normalize(alias))}(?![A-Z0-9])")
+                .find(line)?.range?.first
+        }.minOrNull()
+        if (exactStart != null) return line.substring(exactStart)
+        if (!allowFuzzy) return null
+        // Locate an already accepted fuzzy identity without changing its thresholds.
+        val words = Regex("[A-Z0-9]+").findAll(line).toList()
+        for (index in words.indices) {
+            for (size in 1..minOf(2, words.size - index)) {
+                val start = words[index].range.first
+                val candidate = line.substring(start, words[index + size - 1].range.last + 1)
+                if (findMedicine(candidate)?.name == medicine.name) return line.substring(start)
+            }
+        }
+        return null
+    }
+
     internal fun normalize(value: String): String {
         var text = Normalizer.normalize(value, Normalizer.Form.NFD)
             .replace(Regex("""\p{M}+"""), "")
@@ -326,6 +548,11 @@ internal class OfflineMedicationProcessor internal constructor(
             .replace('O', '0')
             .replace('I', '1')
             .replace('L', '1')
+
+        fun canonicalUnit(rawUnit: String): String = when (rawUnit) {
+            "RNG", "M9", "MQ" -> "MG"
+            else -> rawUnit
+        }
 
         text = Regex("""(?<![A-Z0-9])([VF])\s*([0-9OIL]{2})\s*[/\-. ]\s*([0-9OIL]{2,4})(?![A-Z0-9])""")
             .replace(text) { match ->
@@ -337,9 +564,18 @@ internal class OfflineMedicationProcessor internal constructor(
                 match.groupValues[1] + " " + fixDigits(match.groupValues[2]) +
                     "/" + fixDigits(match.groupValues[3])
             }
-        text = Regex("""\b([0-9OIL]+(?:[.,][0-9OIL]+)?)\s*(MCG|MG|ML|G)\b""")
+        // Milhar em doses grandes (ex.: 50.000 UI) e zeros separados em fonte gigante (ex.: 5 00 mg).
+        text = Regex("""\b([0-9OIL]{1,3})\.([O0]{3})\s*(MCG|MG|ML|G|UI|RNG|M9|MQ)\b""")
             .replace(text) { match ->
-                fixDigits(match.groupValues[1]) + " " + match.groupValues[2]
+                fixDigits(match.groupValues[1]) + "000 " + canonicalUnit(match.groupValues[3])
+            }
+        text = Regex("""\b([1-9])\s+([0O]{2,3})\s*(MCG|MG|ML|G|UI|RNG|M9|MQ)\b""")
+            .replace(text) { match ->
+                match.groupValues[1] + fixDigits(match.groupValues[2]) + " " + canonicalUnit(match.groupValues[3])
+            }
+        text = Regex("""\b([0-9OIL]+(?:[.,][0-9OIL]+)?)\s*(MCG|MG|ML|G|UI|RNG|M9|MQ)\b""")
+            .replace(text) { match ->
+                fixDigits(match.groupValues[1]) + " " + canonicalUnit(match.groupValues[2])
             }
         text = Regex("""\b([0-9OIL]{1,2})\s*[/\-.]\s*([0-9OIL]{2,4})\b""")
             .replace(text) { match ->
@@ -358,10 +594,7 @@ internal class OfflineMedicationProcessor internal constructor(
     }
 
     private fun findMedicineFromOcr(textOcr: String, allowFuzzy: Boolean): Medicine? {
-        val lines = textOcr.lineSequence()
-            .map(::normalize)
-            .filter(String::isNotBlank)
-            .toList()
+        val lines = medicationLines(textOcr)
 
         // A evidência mais forte na embalagem é o nome junto da dosagem. Limitar
         // a busca a esse contexto evita tratar excipientes como princípio ativo.
@@ -487,12 +720,36 @@ internal class OfflineMedicationProcessor internal constructor(
         return bestMedicine?.takeIf { bestScore >= 0.90 && bestScore - secondScore >= 0.08 }
     }
 
-    private fun extractDosage(normalizedText: String): String? {
-        val match = Regex("""\b(\d{1,4}(?:[.,]\d+)?)\s*(MCG|MG|G|ML)\b""")
-            .find(normalizedText)
-            ?: return null
-        return (match.groupValues[1].replace(',', '.') +
-            match.groupValues[2].lowercase(Locale.ROOT))
+    private data class DosageCandidate(val value: String, val priority: Int)
+
+    private fun extractDosage(normalizedText: String): String? =
+        resolvePrioritizedDosage(extractAllDosages(normalizedText))
+
+    private fun extractAllDosages(normalizedText: String): List<DosageCandidate> {
+        val regex = Regex("""\b(\d{1,5}(?:[.,]\d+)?)\s*(MCG|MG|G|ML|UI)(?:\s*/\s*(\d{1,3}\s*)?(MCG|MG|G|ML|DOSE))?\b""")
+        return regex.findAll(normalizedText).map { match ->
+            val number = match.groupValues[1].replace(',', '.')
+            val unit = match.groupValues[2].lowercase(Locale.ROOT)
+            val denomNum = match.groupValues[3].replace(Regex("""\s+"""), "")
+            val denomUnit = match.groupValues[4].lowercase(Locale.ROOT)
+            val value = if (denomUnit.isNotEmpty()) {
+                "$number$unit/$denomNum$denomUnit"
+            } else {
+                "$number$unit"
+            }
+            val priority = if (denomUnit.isNotEmpty() || unit != "ml") 2 else 1
+            DosageCandidate(value, priority)
+        }.toList()
+    }
+
+    private fun resolvePrioritizedDosage(candidates: List<DosageCandidate>): String? {
+        if (candidates.isEmpty()) return null
+        val maxPriority = candidates.maxOf { it.priority }
+        return candidates
+            .filter { it.priority == maxPriority }
+            .map { it.value }
+            .distinct()
+            .singleOrNull()
     }
 
     private fun extractRecipeFrequency(normalizedText: String): String {

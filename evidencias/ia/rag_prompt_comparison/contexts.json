@@ -1,0 +1,131 @@
+{
+  "RAG-01": [
+    {
+      "chunk": {
+        "chunk_id": "pressormin#indicacao",
+        "medicine": "Pressormin",
+        "active_ingredient": "losaprilato de sódio",
+        "section": "indicacao",
+        "content": "Tratamento da hipertensão arterial sistêmica (pressão alta) em adultos. Pode ser usado isoladamente ou em associação com outros anti-hipertensivos."
+      },
+      "score": 0.856329318893416
+    },
+    {
+      "chunk": {
+        "chunk_id": "pressormin#contraindicacoes",
+        "medicine": "Pressormin",
+        "active_ingredient": "losaprilato de sódio",
+        "section": "contraindicacoes",
+        "content": "Gestantes, pacientes com histórico de angioedema relacionado a anti-hipertensivos e insuficiência renal grave (clearance < 30 mL/min)."
+      },
+      "score": 0.569970762149544
+    },
+    {
+      "chunk": {
+        "chunk_id": "pressormin#posologia",
+        "medicine": "Pressormin",
+        "active_ingredient": "losaprilato de sódio",
+        "section": "posologia",
+        "content": "1 comprimido de 10 mg uma vez ao dia, preferencialmente pela manhã, com ou sem alimentos. A dose pode ser ajustada pelo médico até 20 mg ao dia."
+      },
+      "score": 0.568798194043306
+    }
+  ],
+  "RAG-02": [
+    {
+      "chunk": {
+        "chunk_id": "gliforin#posologia",
+        "medicine": "Gliforin",
+        "active_ingredient": "glibenzida",
+        "section": "posologia",
+        "content": "500 mg duas vezes ao dia, junto das refeições. Dose máxima: 2.000 mg ao dia, divididos em 3 tomadas."
+      },
+      "score": 0.8813953989306502
+    },
+    {
+      "chunk": {
+        "chunk_id": "gliforin#indicacao",
+        "medicine": "Gliforin",
+        "active_ingredient": "glibenzida",
+        "section": "indicacao",
+        "content": "Diabetes mellitus tipo 2 em adultos, como auxiliar de dieta e exercícios para controle da glicemia."
+      },
+      "score": 0.48660436471349466
+    },
+    {
+      "chunk": {
+        "chunk_id": "gliforin#contraindicacoes",
+        "medicine": "Gliforin",
+        "active_ingredient": "glibenzida",
+        "section": "contraindicacoes",
+        "content": "Diabetes tipo 1, cetoacidose diabética, insuficiência renal moderada a grave e alergia a biguanidas."
+      },
+      "score": 0.48071729027293714
+    }
+  ],
+  "RAG-03": [
+    {
+      "chunk": {
+        "chunk_id": "cardiovast#interacoes",
+        "medicine": "Cardiovast",
+        "active_ingredient": "nervastatina cálcica",
+        "section": "interacoes",
+        "content": "Suco de toranja (grapefruit) aumenta a concentração da estatina — deve ser evitado. Macrolídeos e antifúngicos azólicos elevam o risco de miopatia."
+      },
+      "score": 0.8829993474120277
+    },
+    {
+      "chunk": {
+        "chunk_id": "cardiovast#contraindicacoes",
+        "medicine": "Cardiovast",
+        "active_ingredient": "nervastatina cálcica",
+        "section": "contraindicacoes",
+        "content": "Doença hepática ativa, gestação e lactação."
+      },
+      "score": 0.610279966660713
+    },
+    {
+      "chunk": {
+        "chunk_id": "cardiovast#efeitos_adversos",
+        "medicine": "Cardiovast",
+        "active_ingredient": "nervastatina cálcica",
+        "section": "efeitos_adversos",
+        "content": "Dor muscular (mialgia), elevação discreta de enzimas hepáticas e, raramente, rabdomiólise."
+      },
+      "score": 0.5509133644147968
+    }
+  ],
+  "RAG-04": [],
+  "RAG-05": [
+    {
+      "chunk": {
+        "chunk_id": "dorfanol#indicacao",
+        "medicine": "Dorfanol",
+        "active_ingredient": "paraxetamol",
+        "section": "indicacao",
+        "content": "Alívio de dores leves a moderadas (dor de cabeça, dor muscular, dor de garganta) e redução de febre."
+      },
+      "score": 0.858478056716548
+    },
+    {
+      "chunk": {
+        "chunk_id": "dorfanol#contraindicacoes",
+        "medicine": "Dorfanol",
+        "active_ingredient": "paraxetamol",
+        "section": "contraindicacoes",
+        "content": "Doença hepática grave e hipersensibilidade conhecida ao paraxetamol."
+      },
+      "score": 0.63707264735641
+    },
+    {
+      "chunk": {
+        "chunk_id": "dorfanol#interacoes",
+        "medicine": "Dorfanol",
+        "active_ingredient": "paraxetamol",
+        "section": "interacoes",
+        "content": "Uso crônico pode potencializar anticoagulantes. Álcool aumenta o risco de toxicidade hepática."
+      },
+      "score": 0.5722392666010161
+    }
+  ]
+}

@@ -17,10 +17,12 @@ import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.guiamed.data.ExpirationReader
+import com.guiamed.data.PackageVisionStats
+import java.util.concurrent.Executor
+import java.util.concurrent.RejectedExecutionException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlin.coroutines.resume
 
 /**
@@ -28,7 +30,11 @@ import kotlin.coroutines.resume
  * Compatível com português brasileiro automaticamente.
  */
 class MlKitOcrEngine {
-    internal data class PackageFrame(val text: String, val ean: String?)
+    internal data class PackageFrame(
+        val text: String,
+        val ean: String?,
+        val visionStats: PackageVisionStats? = null,
+    )
 
     private val barcodeScannerDelegate = lazy {
         BarcodeScanning.getClient(
@@ -41,27 +47,108 @@ class MlKitOcrEngine {
     private val barcodeScanner by barcodeScannerDelegate
 
     @androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
-    internal fun analyzePackageFrame(proxy: ImageProxy, onResult: (PackageFrame) -> Unit) {
+    internal fun analyzePackageFrame(
+        proxy: ImageProxy,
+        executor: Executor,
+        onResult: (PackageFrame) -> Unit,
+    ) {
+        if (closed) {
+            proxy.close()
+            return
+        }
         val mediaImage = proxy.image
         if (mediaImage == null) {
             proxy.close()
             return
         }
-        val image = InputImage.fromMediaImage(mediaImage, proxy.imageInfo.rotationDegrees)
-        val textTask = runCatching { getOrCreateRecognizer().process(image) }
-            .getOrElse { Tasks.forException(it as? Exception ?: IllegalStateException(it)) }
-        val barcodeTask = runCatching { barcodeScanner.process(image) }
-            .getOrElse { Tasks.forException(it as? Exception ?: IllegalStateException(it)) }
-        Tasks.whenAllComplete(textTask, barcodeTask).addOnCompleteListener {
+        val rotation = proxy.imageInfo.rotationDegrees
+        val frameWidth = if (rotation == 90 || rotation == 270) proxy.height else proxy.width
+        val frameHeight = if (rotation == 90 || rotation == 270) proxy.width else proxy.height
+        val safeExecutor = Executor { runnable ->
             try {
-                val text = if (textTask.isSuccessful) textTask.result.text.trim() else ""
-                val codes = if (barcodeTask.isSuccessful) barcodeTask.result else emptyList()
-                val ean = codes.mapNotNull { code -> code.rawValue }.distinct().singleOrNull()
-                onResult(PackageFrame(text, ean))
-            } finally {
-                proxy.close()
+                executor.execute(runnable)
+            } catch (_: RejectedExecutionException) {
+                runnable.run()
             }
         }
+        try {
+            val recognizerInstance = synchronized(this) {
+                if (closed) null else getOrCreateRecognizer()
+            }
+            if (recognizerInstance == null) {
+                proxy.close()
+                return
+            }
+            val image = InputImage.fromMediaImage(mediaImage, rotation)
+            val textTask = runCatching { recognizerInstance.process(image) }
+                .getOrElse { Tasks.forException(it as? Exception ?: IllegalStateException(it)) }
+            val barcodeTask = runCatching { barcodeScanner.process(image) }
+                .getOrElse { Tasks.forException(it as? Exception ?: IllegalStateException(it)) }
+            Tasks.whenAllComplete(textTask, barcodeTask).addOnCompleteListener(safeExecutor) {
+                val frame = try {
+                    val visionText = if (textTask.isSuccessful) textTask.result else null
+                    val text = visionText?.text?.trim().orEmpty()
+                    val codes = if (barcodeTask.isSuccessful) barcodeTask.result else emptyList()
+                    val ean = codes.mapNotNull { code -> code.rawValue }.distinct().singleOrNull()
+                    val stats = visionText?.let { extractVisionStats(it, frameWidth, frameHeight) }
+                    PackageFrame(text, ean, stats)
+                } finally {
+                    proxy.close()
+                }
+                if (!closed) onResult(frame)
+            }
+        } catch (_: Throwable) {
+            proxy.close()
+        }
+    }
+
+    private fun extractVisionStats(
+        visionText: Text,
+        frameWidth: Int,
+        frameHeight: Int,
+    ): PackageVisionStats? {
+        if (frameWidth <= 0 || frameHeight <= 0 || visionText.textBlocks.isEmpty()) return null
+        var minLeft = frameWidth
+        var minTop = frameHeight
+        var maxRight = 0
+        var maxBottom = 0
+        var hasBox = false
+        val lineHeights = mutableListOf<Float>()
+
+        for (block in visionText.textBlocks) {
+            val box = block.boundingBox
+            if (box != null) {
+                minLeft = minOf(minLeft, box.left.coerceIn(0, frameWidth))
+                minTop = minOf(minTop, box.top.coerceIn(0, frameHeight))
+                maxRight = maxOf(maxRight, box.right.coerceIn(0, frameWidth))
+                maxBottom = maxOf(maxBottom, box.bottom.coerceIn(0, frameHeight))
+                hasBox = true
+            }
+            for (line in block.lines) {
+                val lineBox = line.boundingBox ?: continue
+                if (lineBox.height() > 0) {
+                    lineHeights += lineBox.height().toFloat() / frameHeight.toFloat()
+                }
+            }
+        }
+        if (!hasBox || maxRight <= minLeft || maxBottom <= minTop) return null
+        lineHeights.sort()
+        val medianHeight = if (lineHeights.isEmpty()) 0f else lineHeights[lineHeights.size / 2]
+        val maxHeight = lineHeights.lastOrNull() ?: 0f
+        val edgeMarginX = frameWidth * 0.03f
+        val edgeMarginY = frameHeight * 0.03f
+        return PackageVisionStats(
+            hasAnyText = true,
+            lineCount = lineHeights.size,
+            centerXRatio = ((minLeft + maxRight) / 2f) / frameWidth.toFloat(),
+            centerYRatio = ((minTop + maxBottom) / 2f) / frameHeight.toFloat(),
+            occupiedWidthRatio = (maxRight - minLeft).toFloat() / frameWidth.toFloat(),
+            occupiedHeightRatio = (maxBottom - minTop).toFloat() / frameHeight.toFloat(),
+            clippedEdge = minLeft <= edgeMarginX || minTop <= edgeMarginY ||
+                maxRight >= frameWidth - edgeMarginX || maxBottom >= frameHeight - edgeMarginY,
+            medianLineHeightRatio = medianHeight,
+            maxLineHeightRatio = maxHeight,
+        )
     }
 
 
@@ -70,6 +157,7 @@ class MlKitOcrEngine {
     }
 
     private var isInitialized = false
+    @Volatile private var closed = false
     private var recognizer: TextRecognizer? = null
 
     suspend fun initialize(): Boolean {
@@ -85,11 +173,25 @@ class MlKitOcrEngine {
     }
 
     suspend fun recognizeText(bitmap: Bitmap): String {
+        // ML Kit owns a copy until its Task completes, including after timeout/cancellation.
+        return recognizeText(bitmap.copy(Bitmap.Config.ARGB_8888, false), recycleOnCompletion = true)
+    }
+
+    private suspend fun recognizeText(bitmap: Bitmap, recycleOnCompletion: Boolean): String {
         return suspendCancellableCoroutine { continuation ->
             val activeRecognizer = getOrCreateRecognizer()
             val image = InputImage.fromBitmap(bitmap, 0)
 
-            activeRecognizer.process(image)
+            val task = try { activeRecognizer.process(image) } catch (error: Exception) {
+                if (recycleOnCompletion) bitmap.recycle()
+                if (continuation.isActive) continuation.resume("")
+                return@suspendCancellableCoroutine
+            }
+            task.addOnCompleteListener {
+                // ML Kit may still be using the bitmap after coroutine cancellation.
+                if (recycleOnCompletion && !bitmap.isRecycled) bitmap.recycle()
+            }
+            task
                 .addOnSuccessListener { visionText: Text ->
                     val result = visionText.text.trim()
                     Log.d(TAG, "OCR concluído com ${result.length} caracteres")
@@ -109,7 +211,9 @@ class MlKitOcrEngine {
     suspend fun recognizeText(image: android.media.Image): String {
         return try {
             val bitmap = imageToBitmap(image) ?: return ""
-            recognizeTextFromBitmap(bitmap).also { bitmap.recycle() }
+            try { recognizeTextFromBitmap(bitmap) } finally { bitmap.recycle() }
+        } catch (error: CancellationException) {
+            throw error
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao converter imagem para OCR", e)
             ""
@@ -118,7 +222,9 @@ class MlKitOcrEngine {
 
     suspend fun recognizeTextFromBitmap(bitmap: Bitmap): String {
         val focusedText = recognizeFocusedPackageText(bitmap)
-        if (isLikelyReadablePackageText(focusedText)) return focusedText
+        if (isLikelyReadablePackageText(focusedText) && hasDosageCandidate(focusedText)) {
+            return focusedText
+        }
         return mergeRecognizedLines(listOf(focusedText, recognizeFullPackageText(bitmap)))
     }
 
@@ -144,32 +250,63 @@ class MlKitOcrEngine {
 
         if (cropped == null) return recognizeFullPackageText(bitmap)
         return try {
-            val croppedPrepared = scaleDownForOcr(cropped, maxDimension = 2800)
-            try {
-                recognizeText(croppedPrepared).trim()
-            } finally {
-                if (croppedPrepared !== cropped && currentCoroutineContext().isActive) {
-                    croppedPrepared.recycle()
-                }
-            }
+            recognizeScaledPackage(cropped, maxDimension = 2800, highContrast = false)
         } finally {
-            if (currentCoroutineContext().isActive) cropped.recycle()
+            cropped.recycle()
         }
     }
 
     suspend fun recognizeFullPackageText(bitmap: Bitmap): String {
-        // Fallback independente para embalagens fora do centro ou com formato incomum.
-        val prepared = scaleDownForOcr(bitmap, maxDimension = 2200)
+        // Fallback para embalagens fora do centro ou com tipografia muito grande na frente.
+        val fullText = recognizeScaledPackage(bitmap, maxDimension = 2200, highContrast = false)
+        if (hasDosageCandidate(fullText)) return fullText
+        val largePrintText = recognizeLargePrintPackageText(bitmap)
+        return mergeRecognizedLines(listOf(fullText, largePrintText))
+    }
+
+    suspend fun recognizeLargePrintPackageText(bitmap: Bitmap): String {
+        // Fontes gigantes na frente da caixa ficam grandes demais para o ML Kit em 2200-2800 px.
+        val downscaled = recognizeScaledPackage(bitmap, maxDimension = 1024, highContrast = false)
+        if (hasDosageCandidate(downscaled)) return downscaled
+        val contrasted = recognizeScaledPackage(bitmap, maxDimension = 1024, highContrast = true)
+        return mergeRecognizedLines(listOf(downscaled, contrasted))
+    }
+
+    suspend fun recognizeValidityText(bitmap: Bitmap): String {
+        val normalPass = recognizeScaledPackage(bitmap, maxDimension = 3000, highContrast = false)
+        if (ExpirationReader.findDates(normalPass).isNotEmpty()) return normalPass
+        // Carimbo de validade claro/baixo contraste em abas brilhantes costuma responder melhor com contraste alto.
+        val contrastPass = recognizeScaledPackage(bitmap, maxDimension = 2600, highContrast = true)
+        return mergeRecognizedLines(listOf(normalPass, contrastPass))
+    }
+
+    private suspend fun recognizeScaledPackage(
+        bitmap: Bitmap,
+        maxDimension: Int,
+        highContrast: Boolean,
+    ): String {
+        val prepared = scaleDownForOcr(bitmap, maxDimension = maxDimension)
         return try {
-            recognizeText(prepared).trim()
+            if (highContrast) {
+                val enhanced = enhanceForOcr(prepared)
+                recognizeText(enhanced, recycleOnCompletion = true).trim()
+            } else {
+                recognizeText(prepared).trim()
+            }
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            Log.w(TAG, "Falha na passagem ampla do OCR", error)
+            Log.w(TAG, "Falha na passagem de OCR da embalagem (${maxDimension}px)", error)
             ""
         } finally {
-            if (prepared !== bitmap && currentCoroutineContext().isActive) prepared.recycle()
+            if (prepared !== bitmap) prepared.recycle()
         }
+    }
+
+    private fun hasDosageCandidate(text: String): Boolean {
+        val normalized = text.replace('\n', ' ')
+        return Regex("""\b\d{1,5}(?:[.,]\d+)?\s*(?:MCG|MG|G|ML|UI)\b""", RegexOption.IGNORE_CASE)
+            .containsMatchIn(normalized)
     }
 
     private fun isLikelyReadablePackageText(text: String): Boolean {
@@ -187,18 +324,19 @@ class MlKitOcrEngine {
     suspend fun recognizeDocumentTextFromBitmap(
         bitmap: Bitmap,
         highContrast: Boolean = false,
+        onPartial: suspend (String) -> Unit = {},
     ): String {
-        if (highContrast) return recognizeDocumentTiles(bitmap)
+        if (highContrast) return recognizeDocumentTiles(bitmap, onPartial)
 
         val prepared = scaleDownForOcr(bitmap, maxDimension = 3200)
         return try {
             recognizeText(prepared)
         } finally {
-            if (prepared !== bitmap && currentCoroutineContext().isActive) prepared.recycle()
+            if (prepared !== bitmap) prepared.recycle()
         }
     }
 
-    private suspend fun recognizeDocumentTiles(bitmap: Bitmap): String {
+    private suspend fun recognizeDocumentTiles(bitmap: Bitmap, onPartial: suspend (String) -> Unit): String {
         val tiles = createOverlappingDocumentTiles(bitmap)
         val attempts = mutableListOf<String>()
         try {
@@ -206,14 +344,14 @@ class MlKitOcrEngine {
                 val prepared = scaleDownForOcr(tile, maxDimension = 2400)
                 val enhanced = enhanceForOcr(prepared)
                 try {
-                    attempts += recognizeText(enhanced)
+                    attempts += recognizeText(enhanced, recycleOnCompletion = true)
+                    onPartial(mergeOverlappingDocumentTexts(attempts))
                 } finally {
-                    enhanced.recycle()
                     if (prepared !== tile) prepared.recycle()
                 }
             }
         } finally {
-            tiles.forEach { tile -> if (!tile.isRecycled) tile.recycle() }
+            tiles.forEach { tile -> if (tile !== bitmap && !tile.isRecycled) tile.recycle() }
         }
         return mergeOverlappingDocumentTexts(attempts)
     }
@@ -334,7 +472,9 @@ class MlKitOcrEngine {
         return android.graphics.BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
     }
 
+    @Synchronized
     fun close() {
+        closed = true
         if (barcodeScannerDelegate.isInitialized()) barcodeScanner.close()
         recognizer?.close()
         recognizer = null

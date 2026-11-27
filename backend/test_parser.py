@@ -127,6 +127,35 @@ class MedicationParserTests(unittest.TestCase):
         unknown = parse_verification("CAIXA AZUL USO ORAL 20 MG", [])
         self.assertEqual("Medicamento não identificado com segurança", unknown.nome)
 
+    def test_reads_large_front_dosage_across_descriptors_and_line_breaks(self):
+        split_unit = parse_verification(
+            "DIPIRONA SODICA\nMEDICAMENTO GENERICO\n30 COMPRIMIDOS\nUSO ORAL\n5OO\nmg",
+            [],
+        )
+        self.assertEqual("Dipirona Sódica", split_unit.nome)
+        self.assertEqual("500mg", split_unit.miligramas)
+
+        front_dosage_above = parse_verification(
+            "20 MG\nMEDICAMENTO GENERICO\nROSUVASTATINA CALCICA\nCOMPRIMIDO REVESTIDO",
+            [],
+        )
+        self.assertEqual("Rosuvastatina Cálcica", front_dosage_above.nome)
+        self.assertEqual("20mg", front_dosage_above.miligramas)
+
+        concentration = parse_verification(
+            "DIPIRONA SODICA\n500 MG/ML\nSOLUCAO ORAL\nFRASCO 20 ML",
+            [],
+        )
+        self.assertEqual("Dipirona Sódica", concentration.nome)
+        self.assertEqual("500mg/ml", concentration.miligramas)
+
+        noisy_giant = parse_verification(
+            "PARACETAMOL\n5 00 mq\nUSO ADULTO",
+            [],
+        )
+        self.assertEqual("Paracetamol", noisy_giant.nome)
+        self.assertEqual("500mg", noisy_giant.miligramas)
+
 
 if __name__ == "__main__":
     unittest.main()

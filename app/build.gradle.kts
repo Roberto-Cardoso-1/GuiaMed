@@ -8,8 +8,7 @@ val guiaMedApiBaseUrl = providers.gradleProperty("GUIAMED_API_BASE_URL")
     .orElse("http://10.0.2.2:8000/")
     .get()
 val guiaMedUseRemoteApi = providers.gradleProperty("GUIAMED_USE_REMOTE_API")
-    .orElse("false")
-    .get()
+    .orNull?.also { require(it == "true" || it == "false") { "GUIAMED_USE_REMOTE_API deve ser true ou false" } }
 
 android {
     namespace = "com.guiamed"
@@ -23,10 +22,14 @@ android {
         versionName = "1.0.1"
         vectorDrawables.useSupportLibrary = true
         buildConfigField("String", "API_BASE_URL", "\"$guiaMedApiBaseUrl\"")
-        buildConfigField("boolean", "USE_REMOTE_API", guiaMedUseRemoteApi)
+        buildConfigField("boolean", "USE_REMOTE_API", guiaMedUseRemoteApi ?: "false")
     }
 
     buildTypes {
+        debug {
+            // Build integrado por padrão; -PGUIAMED_USE_REMOTE_API=false gera APK offline.
+            buildConfigField("boolean", "USE_REMOTE_API", guiaMedUseRemoteApi ?: "true")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

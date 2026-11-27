@@ -1,67 +1,75 @@
 # Segurança, otimização e integração — GuiaMed
 
-O banco de integração é PostgreSQL local. Todos os dados de demonstração são
-fictícios e identificadores de dispositivo são armazenados somente como SHA-256.
+O banco acadêmico é PostgreSQL local e usa apenas dados fictícios. Identidades
+de dispositivo e consultas são persistidas como SHA-256, nunca em texto livre.
 
-## Papéis e menor privilégio
+## Matriz final de papéis e permissões
 
-| Papel | Permitido | Negado por ausência de privilégio |
+| Papel | Permitido | Negado e teste que comprova |
 |---|---|---|
-| `rl_app_ia` | Executar funções autorizadas de alergia, RAG e auditoria | Operações diretas nas tabelas privadas |
-| `rl_paciente` | Ler somente alergias e auditorias do hash definido na sessão | Dados de qualquer outro dispositivo e toda escrita direta |
-| `rl_suporte` | Consultar a visão de auditoria mascarada | Tabelas privadas e texto original das consultas |
-| `rl_farmaceutico` | Manter chunks públicos e consultar métricas mascaradas | Alergias e identificadores completos |
+| `rl_app_ia` | Executar funções autorizadas de alergia, RAG e auditoria | `SELECT` nas tabelas privadas retorna `permission denied` |
+| `rl_paciente` | Ler somente alergias/auditoria do hash da sessão | RLS: perfil A vê 1 linha e B vê 0 |
+| `rl_suporte` | Consultar visão de auditoria mascarada | Não recebe acesso às tabelas nem ao hash completo |
+| `rl_farmaceutico` | Manter chunks públicos e consultar métricas permitidas | Não acessa alergias nem identificadores completos |
 
-PostgreSQL não possui a instrução `DENY` do SQL Server. O mesmo efeito é
-implementado com `REVOKE`, ausência de `GRANT`, schemas privados e funções
-`SECURITY DEFINER` com `search_path` fixo. A tentativa direta retorna
-`permission denied`.
+O PostgreSQL não possui `DENY` como o SQL Server. O DENY exigido é implementado
+por `REVOKE`, ausência de `GRANT`, schemas privados e funções `SECURITY DEFINER`
+com `search_path` fixo. A negação é justificada porque a IA precisa executar
+operações específicas, mas não precisa consultar dados de saúde diretamente.
 
-## Proteções aplicadas
+Evidência: `evidencias/seguranca/permissoes_integracao.txt`.
 
-- **RLS:** políticas em `allergy` e `audit_log` comparam o hash da linha ao
-  contexto `app.device_hash` da sessão.
-- **Mascaramento:** `guiamed_api.support_audit_masked` mostra somente os oito
-  últimos caracteres do hash ao suporte.
-- **Consultas parametrizadas:** o backend usa parâmetros `$1`, `$2`, etc.; não
-  há interpolação de entrada OCR em SQL.
-- **Auditoria mínima:** registra quem pediu (hash), operação, impressão digital
-  da pergunta, fontes, horário, latência e custo — nunca o texto livre completo.
-- **Falha segura:** a identidade da IA só recebe `EXECUTE` nas funções
-  permitidas e não recebe `USAGE` no schema privado.
+## Duas técnicas de proteção de dado sensível
 
-Os papéis sem login são criados uma única vez pelo administrador em
-[`db/postgres/00_roles_admin.sql`](../db/postgres/00_roles_admin.sql). Os objetos
-e privilégios ficam em
-[`db/postgres/01_security.sql`](../db/postgres/01_security.sql).
+1. **RLS:** políticas em `allergy` e `audit_log` comparam o hash da linha ao
+   contexto `app.device_hash`. Um paciente não lê registros de outro.
+2. **Mascaramento:** `guiamed_api.support_audit_masked` substitui os 56 primeiros
+   caracteres do hash por asteriscos e mostra apenas os oito finais ao suporte.
 
-## Base com volume
+Consultas parametrizadas (`$1`, `$2`, etc.), schemas privados e ausência de
+segredos no repositório complementam essas proteções.
 
-[`db/postgres/02_seed_volume.sql`](../db/postgres/02_seed_volume.sql) gera, de
-forma set-based, 50.000 chunks sintéticos e 1.000.000 de eventos de auditoria
-fictícios. A evidência contém o resultado real de `COUNT(*)`.
+## Duas consultas lentas otimizadas
 
-## Consultas lentas e planos
+| Consulta | Antes | Depois | Técnica | Ganho aproximado |
+|---|---:|---:|---|---:|
+| Busca textual nos 50 mil chunks | 37,647 ms, `Seq Scan` | 0,120 ms, `Bitmap Index Scan` | full-text search + índice GIN | 313,7× |
+| Alertas críticos em 1 milhão de auditorias | 109,734 ms, `Parallel Seq Scan` | 0,075 ms, `Index Only Scan` | índice parcial por data com `danger=true` | 1.463,1× |
 
-[`db/postgres/04_planos_execucao.sql`](../db/postgres/04_planos_execucao.sql)
-executa `EXPLAIN (ANALYZE, BUFFERS)` antes e depois para:
+Os planos foram obtidos com `EXPLAIN (ANALYZE, BUFFERS)`. Fonte bruta:
+`evidencias/seguranca/planos_execucao.txt`; script reproduzível:
+`db/postgres/04_planos_execucao.sql`.
 
-1. busca textual com `ILIKE '%...%'`, substituída por full-text search com
-   índice GIN;
-2. relatório temporal de alertas críticos, otimizado com índice parcial em
-   `requested_at WHERE danger = true`.
+## Ataque e correção
 
-As saídas brutas ficam em `evidencias/seguranca/planos_execucao.txt`.
+O escalonamento do papel da IA foi testado por acesso direto ao schema privado.
+A tentativa foi negada, enquanto a função autorizada continuou funcionando. A
+correção é menor privilégio com funções estreitas e `search_path` fixo. Detalhes
+e prompt injection estão em `docs/ataques.md`.
 
-## Evidência de integração
+## Trilha de auditoria
 
-[`db/postgres/03_evidencias_integracao.sql`](../db/postgres/03_evidencias_integracao.sql)
-prova cinco situações:
+A auditoria registra:
 
-1. `rl_app_ia` recebe erro ao consultar `allergy` diretamente;
-2. o mesmo papel usa a função autorizada;
-3. a IA grava auditoria com fonte e horário;
-4. o suporte vê somente o hash mascarado;
-5. RLS permite ao dispositivo A ver seu dado e impede o dispositivo B.
+- quem consultou: hash SHA-256 do solicitante;
+- o que consultou: impressão digital da pergunta e fontes utilizadas;
+- o que a IA respondeu: texto da resposta fictícia e SHA-256 no JSON auditado;
+- quando: `requested_at`;
+- como: versão do prompt, modelo, revisão, modo, tokens e origem da citação;
+- desempenho/custo: latência e cobrança externa.
 
-A saída fica em `evidencias/seguranca/permissoes_integracao.txt`.
+A pergunta original não é persistida para reduzir exposição de texto livre. A
+resposta vem apenas das bulas fictícias ou de mensagens de recusa. A visão de
+suporte mantém o solicitante mascarado. O n8n conserva o ID retornado pela API,
+permitindo relacionar a execução à linha PostgreSQL.
+
+## Prova por perfil
+
+Na mesma consulta fictícia, o perfil A recebeu HTTP 200 e confirmou seu
+registro; o perfil B recebeu HTTP 403. As duas tentativas foram auditadas como
+`demo_alergia_permitida` e `demo_alergia_negada`, com solicitantes mascarados.
+Assim, a camada de IA não contorna o que RLS e permissões protegem.
+
+Evidências: `evidencias/n8n/demo_perfis_execucao.txt`,
+`evidencias/seguranca/auditoria_n8n.txt` e
+`evidencias/n8n/rag_generativo_postgresql.md`.

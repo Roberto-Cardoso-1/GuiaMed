@@ -2,14 +2,25 @@ package com.guiamed.ui
 
 import com.guiamed.data.ReceitaResponse
 import com.guiamed.data.VerificarResponse
+import java.text.Normalizer
+import java.util.Locale
+
+private val COMBINING_MARKS_REGEX = Regex("\\p{Mn}+")
+private val MULTI_SPACE_REGEX = Regex("\\s+")
+
+private fun normalizeMedicationKey(value: String): String =
+    Normalizer.normalize(value.trim().lowercase(Locale.ROOT), Normalizer.Form.NFD)
+        .replace(COMBINING_MARKS_REGEX, "")
+        .replace(MULTI_SPACE_REGEX, " ")
 
 internal data class ReadingPresentation(
     val title: String,
     val details: String,
     val alert: String? = null,
+    val spokenTitle: String? = null,
 ) {
     val speech: String
-        get() = listOfNotNull(alert, title, details)
+        get() = listOfNotNull(alert, spokenTitle ?: title, details)
             .flatMap { it.lineSequence().filter(String::isNotBlank).toList() }
             .joinToString(" ") { line ->
                 val text = line.trim()
@@ -37,31 +48,64 @@ internal fun VerificarResponse.toReadingPresentation(showMissingValidity: Boolea
         posologia?.takeIf(String::isNotBlank)?.let { add("Posologia: $it") }
         if (remainingMessage.isNotBlank()) add(remainingMessage)
     }
-    return ReadingPresentation(nome, details.joinToString("\n"), alerts.joinToString("\n").ifBlank { null })
+    val spokenTitle = nome.trim()
+        .takeIf { it.isNotBlank() && !it.startsWith("Medicamento não identificado", ignoreCase = true) }
+        ?.let { "O remédio é $it" }
+    return ReadingPresentation(
+        title = nome,
+        details = details.joinToString("\n"),
+        alert = alerts.joinToString("\n").ifBlank { null },
+        spokenTitle = spokenTitle,
+    )
 }
 
 internal fun ReceitaResponse.toReadingPresentation(): ReadingPresentation {
+    val alertKeys = medicamentosComAlerta
+        .map(::normalizeMedicationKey)
+        .filter(String::isNotBlank)
     val details = buildList {
+        if (medicamentos.isNotEmpty()) {
+            add(
+                if (medicamentos.size == 1) "1 medicamento identificado na receita."
+                else "${medicamentos.size} medicamentos identificados na receita."
+            )
+        }
         for (medicine in medicamentos) {
+            val normalizedName = normalizeMedicationKey(medicine.nome)
+            val isAllergic = normalizedName.isNotBlank() && alertKeys.any { alert ->
+                normalizedName == alert || normalizedName.contains(alert) || alert.contains(normalizedName)
+            }
             add(buildList {
                 add(medicine.nome)
-                add(if (medicine.dosagem.isBlank() || medicine.dosagem == "dosagem não identificada")
-                    "Dosagem não identificada" else "Dosagem: ${medicine.dosagem}")
-                add(if (medicine.frequencia.isBlank() || medicine.frequencia == "frequência não identificada")
-                    "Frequência não identificada" else "Frequência: ${medicine.frequencia}")
-                medicine.duracao?.takeIf(String::isNotBlank)?.let { add("Duração: $it") }
+                if (isAllergic) {
+                    add("Atenção: você cadastrou alergia compatível com ${medicine.nome}. Não utilize sem falar com seu médico.")
+                }
+                add(
+                    if (medicine.dosagem.isBlank() || medicine.dosagem.trim().equals("dosagem não identificada", ignoreCase = true)) {
+                        "Dosagem não identificada"
+                    } else {
+                        "Dosagem: ${medicine.dosagem}"
+                    }
+                )
+                add(
+                    if (medicine.frequencia.isBlank() || medicine.frequencia.trim().equals("frequência não identificada", ignoreCase = true)) {
+                        "Frequência não identificada"
+                    } else {
+                        "Frequência: ${medicine.frequencia}"
+                    }
+                )
+                medicine.duracao?.takeIf(String::isNotBlank)?.let { add("Duração do tratamento: $it") }
                 medicine.instrucoes?.takeIf(String::isNotBlank)?.let { add("Instruções: $it") }
             }.joinToString("\n"))
         }
-        if (horarios.isNotEmpty()) add("Horários: ${horarios.joinToString(", ")}")
+        if (horarios.isNotEmpty()) add("Horários identificados: ${horarios.joinToString(", ")}")
         mensagem
-            ?.takeIf { it.isNotBlank() && !it.contains("processada com sucesso", ignoreCase = true) }
+            ?.replace("Receita processada com sucesso.", "", ignoreCase = true)
+            ?.trim()
+            ?.takeIf(String::isNotBlank)
             ?.let(::add)
-        textoOcrCompleto?.trim()?.takeIf(String::isNotBlank)?.let { fullText ->
-            add("Texto completo reconhecido:\n$fullText")
-        }
     }
     val alert = medicamentosComAlerta.takeIf(List<String>::isNotEmpty)
-        ?.joinToString(prefix = "Alerta de alergia. ")
+        ?.let { "Alerta de alergia: ${it.joinToString(", ")}" }
     return ReadingPresentation("Receita lida", details.joinToString("\n\n"), alert)
 }

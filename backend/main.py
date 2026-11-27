@@ -19,22 +19,29 @@ import re
 import threading
 import unicodedata
 import uuid
+import time
+from dataclasses import dataclass, field
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from difflib import SequenceMatcher
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Literal, Optional
 
 import asyncpg
 from asyncpg.pool import Pool
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from local_lora import MAX_OCR_CHARS, LocalLora
-from local_rag import get_local_rag
+from local_lora import MAX_OCR_CHARS, LocalLora, GENERATION_DEADLINE, DEFAULT_REAL_ADAPTER
+
+
+def get_local_rag():
+    # Optional generation dependencies must not prevent OCR/API imports or startup.
+    from local_rag import get_local_rag as load_local_rag
+    return load_local_rag()
 
 
 class Settings(BaseSettings):
@@ -46,7 +53,10 @@ class Settings(BaseSettings):
     tz: str = "America/Sao_Paulo"
     lora_enabled: bool = True
     lora_gguf_path: Path | None = None
+    lora_adapter_dir: Path | None = DEFAULT_REAL_ADAPTER
     lora_threads: int = Field(default=4, ge=1, le=32)
+    lora_max_calls: int = Field(default=4, ge=1, le=12)
+    lora_budget_ms: int = Field(default=1500, ge=1, le=10000)
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
@@ -187,12 +197,23 @@ class HealthResponse(BaseModel):
 
 
 class RagRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     device_id: str = Field(..., min_length=1, max_length=200)
     pergunta: str = Field(..., min_length=3, max_length=4_000)
     timestamp: int
+    prompt_version: Literal["v1", "v2"] = "v2"
+
+
+class RagAuditReceipt(BaseModel):
+    id: str
+    backend: Literal["postgresql", "memoria"]
+    persistida: bool
 
 
 class RagResponse(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     resposta: str
     fontes: list[str] = Field(default_factory=list)
     medicamento: Optional[str] = None
@@ -202,6 +223,27 @@ class RagResponse(BaseModel):
     custo_usd: float = Field(..., ge=0.0)
     auditoria_id: str
     entrada_hostil_detectada: bool = False
+    auditoria: RagAuditReceipt
+    busca_ms: float = Field(..., ge=0.0)
+    geracao_ms: float = Field(..., ge=0.0)
+    load_ms: float = Field(..., ge=0.0)
+    total_ms: float = Field(..., ge=0.0)
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    model: str
+    revision: str
+    mode: Literal["llm_grounded", "fallback_template", "refusal_no_evidence", "refusal_hostile"]
+    fallback: bool
+    fallback_reason: str | None = None
+    prompt_sha256: str
+    generation_attempted: bool
+    llm_called: bool
+    generator_backend: str
+    citation_origin: str
+    decoding: str
+    geracao_llm_real: bool
+    consulta_sha256: str
+    custos: dict[str, object]
 
 
 def strip_accents(value: str) -> str:
@@ -236,11 +278,26 @@ def normalize_ocr(value: str) -> str:
         text,
     )
 
-    def fix_measure(match: re.Match[str]) -> str:
-        number = match.group(1).replace("O", "0").replace("I", "1").replace("L", "1")
-        return f"{number} {match.group(2)}"
+    def fix_digits(raw: str) -> str:
+        return raw.replace("O", "0").replace("I", "1").replace("L", "1")
 
-    text = re.sub(r"\b([0-9OIL]+(?:[.,][0-9OIL]+)?)\s*(MCG|MG|ML|G)\b", fix_measure, text)
+    def canonical_unit(unit: str) -> str:
+        return "MG" if unit in {"RNG", "M9", "MQ"} else unit
+
+    def fix_measure(match: re.Match[str]) -> str:
+        return f"{fix_digits(match.group(1))} {canonical_unit(match.group(2))}"
+
+    text = re.sub(
+        r"\b([0-9OIL]{1,3})\.([O0]{3})\s*(MCG|MG|ML|G|UI|RNG|M9|MQ)\b",
+        lambda match: f"{fix_digits(match.group(1))}000 {canonical_unit(match.group(3))}",
+        text,
+    )
+    text = re.sub(
+        r"\b([1-9])\s+([0O]{2,3})\s*(MCG|MG|ML|G|UI|RNG|M9|MQ)\b",
+        lambda match: f"{match.group(1)}{fix_digits(match.group(2))} {canonical_unit(match.group(3))}",
+        text,
+    )
+    text = re.sub(r"\b([0-9OIL]+(?:[.,][0-9OIL]+)?)\s*(MCG|MG|ML|G|UI|RNG|M9|MQ)\b", fix_measure, text)
     text = re.sub(
         r"\b([0-9OIL]{1,2})\s*[/\-.]\s*([0-9OIL]{2,4})\b",
         lambda match: f"{match.group(1).replace('O', '0').replace('I', '1').replace('L', '1')}/"
@@ -284,57 +341,6 @@ def load_dcb_catalog() -> tuple[dict[str, dict], tuple[tuple[str, dict], ...]]:
     return exact_index, tuple(single_word_index)
 
 
-def find_dcb_medicine(normalized_text: str) -> Optional[dict]:
-    exact_index, single_word_index = load_dcb_catalog()
-    if not exact_index:
-        return None
-
-    words = [
-        word
-        for word in re.findall(r"[A-Z0-9]{2,}", normalized_text)
-        if any(char.isalpha() for char in word)
-    ]
-
-    # Prefere a denominação exata mais longa. Assim, por exemplo,
-    # "rosuvastatina cálcica" ganha de "rosuvastatina".
-    exact_matches: list[tuple[int, dict]] = []
-    for size in range(1, min(6, len(words)) + 1):
-        for index in range(len(words) - size + 1):
-            candidate = " ".join(words[index : index + size])
-            medicine = exact_index.get(candidate)
-            if medicine is not None:
-                exact_matches.append((len(candidate), medicine))
-    if exact_matches:
-        return max(exact_matches, key=lambda match: match[0])[1]
-
-    # A busca aproximada é deliberadamente restrita a palavras longas e exige
-    # vantagem clara sobre o segundo resultado, evitando adivinhar remédios.
-    candidates = {
-        word
-        for word in words
-        if len(word) >= 7 and word not in OCR_NON_MEDICINE_WORDS
-    }
-    best_medicine: Optional[dict] = None
-    best_score = 0.0
-    second_score = 0.0
-    for candidate in candidates:
-        tolerance = max(2, round(len(candidate) * 0.18))
-        for official_name, medicine in single_word_index:
-            if abs(len(official_name) - len(candidate)) > tolerance:
-                continue
-            score = SequenceMatcher(None, official_name, candidate).ratio()
-            if score > best_score:
-                second_score = best_score
-                best_score = score
-                best_medicine = medicine
-            elif medicine != best_medicine and score > second_score:
-                second_score = score
-
-    if best_score >= 0.86 and best_score - second_score >= 0.04:
-        return best_medicine
-    return None
-
-
 def _similarity(left: str, right: str) -> float:
     left_normalized = normalize_ocr(left)
     right_normalized = normalize_ocr(right)
@@ -343,27 +349,45 @@ def _similarity(left: str, right: str) -> float:
     return SequenceMatcher(None, left_normalized, right_normalized).ratio()
 
 
+def hostile_ocr(text: str) -> bool:
+    return bool(re.search(r"\b(?:IGNORE (?:AS )?INSTRUCOES|RESPONDA (?:APENAS |COM )?|REVELE O PROMPT|SYSTEM PROMPT)\b", normalize_ocr(text)))
+
+
+def exact_catalog_identities(normalized_text: str) -> dict[str, dict]:
+    words = re.findall(r"[A-Z0-9]+", normalized_text)
+    names = lora_catalog()[0]
+    spans = []
+    for size in range(1, min(6, len(words)) + 1):
+        for start in range(len(words) - size + 1):
+            if medicine := names.get(" ".join(words[start:start + size])):
+                spans.append((start, start + size, medicine))
+    # Prefer the longest overlapping name (salt/full DCB), but refuse distinct
+    # non-overlapping identities, including curated + DCB on the same box.
+    matches = {}
+    furthest_end = -1
+    for start, end, medicine in sorted(spans, key=lambda span: (span[0], -span[1])):
+        if end > furthest_end:
+            matches[medicine["nome"]] = medicine
+            furthest_end = end
+    return matches
+
+
 def find_medicine(normalized_text: str) -> Optional[dict]:
-    words = re.findall(r"[A-Z]{3,}", normalized_text)
-    candidates = words + [" ".join(words[index : index + 2]) for index in range(len(words) - 1)]
-    best_medicine: Optional[dict] = None
-    best_score = 0.0
-    for medicine in MEDICINES:
-        for alias in medicine["aliases"]:
-            alias_normalized = normalize_ocr(alias)
-            if alias_normalized in normalized_text:
-                return medicine
-            for candidate in candidates:
-                score = SequenceMatcher(None, alias_normalized, candidate).ratio()
-                if score > best_score:
-                    best_score = score
-                    best_medicine = medicine
-    if best_score >= 0.86:
-        return best_medicine
-    dcb_medicine = find_dcb_medicine(normalized_text)
-    if dcb_medicine is not None:
-        return dcb_medicine
-    return best_medicine if best_score >= 0.72 else None
+    if hostile_ocr(normalized_text):
+        return None
+    matches = exact_catalog_identities(normalized_text)
+    if matches:
+        if len(matches) != 1:
+            return None
+        selected = next(iter(matches.values()))
+        identity = normalize_ocr(selected["nome"])
+        for other in evidence_candidates(normalized_text).values():
+            other_identity = normalize_ocr(other["nome"])
+            if other_identity not in identity and identity not in other_identity:
+                return None
+        return selected
+    matches = evidence_candidates("\n".join(re.findall(r"[A-Z0-9]+", normalized_text)))
+    return next(iter(matches.values())) if len(matches) == 1 else None
 
 
 @lru_cache(maxsize=1)
@@ -382,39 +406,148 @@ def lora_catalog() -> tuple[dict[str, dict], dict[str, dict[str, dict]]]:
     return names, compact_names
 
 
+@lru_cache(maxsize=1)
+def recovery_index() -> dict[str, set[str]]:
+    # One edit retrieval: deletion keys bound work independently of catalog size.
+    index: dict[str, set[str]] = {}
+    for name in lora_catalog()[1]:
+        for key in {name, *(name[:i] + name[i + 1:] for i in range(len(name)))}:
+            index.setdefault(key, set()).add(name)
+    return index
+
+
+def evidence_candidates(text: str, budget: RecoveryBudget | None = None, observed: list[str] | None = None) -> dict[str, dict]:
+    """Require a full OCR span, >=.90 similarity and .04 separation per span.
+
+    Joining spaces is allowed; arbitrary substrings and model assertions are not
+    evidence. Retrieval uses one-deletion neighborhoods (including transpositions).
+    """
+    if hostile_ocr(text):
+        return {}
+    compact_names = lora_catalog()[1]
+    index = recovery_index()
+    matches: dict[str, dict] = {}
+    for line in text.splitlines():
+        words = re.findall(r"[A-Z0-9]+", normalize_ocr(line))
+        for start in range(len(words)):
+            if budget is not None and not budget.available():
+                raise TimeoutError("recovery preparation budget exhausted")
+            for end in range(start + 1, min(start + 6, len(words)) + 1):
+                span = "".join(words[start:end])
+                if not span.isalpha() or len(span) < 7 or len(span) > 80:
+                    continue
+                exact = compact_names.get(span)
+                if exact:
+                    matches.update(exact)
+                    if observed is not None:
+                        observed.append(" ".join(words[start:end]))
+                    continue
+                keys = {span, *(span[:i] + span[i + 1:] for i in range(len(span)))}
+                candidates = set().union(*(index.get(key, set()) for key in keys))
+                scores: dict[str, tuple[float, dict]] = {}
+                for candidate in candidates:
+                    score = SequenceMatcher(None, span, candidate).ratio()
+                    for name, medicine in compact_names[candidate].items():
+                        if score > scores.get(name, (0, {}))[0]:
+                            scores[name] = (score, medicine)
+                ranked = sorted(scores.values(), key=lambda row: row[0], reverse=True)
+                if ranked and ranked[0][0] >= .90 and (len(ranked) == 1 or ranked[0][0] - ranked[1][0] >= .04):
+                    medicine = ranked[0][1]
+                    matches[medicine["nome"]] = medicine
+                    if observed is not None:
+                        observed.append(" ".join(words[start:end]))
+    return matches
+
+
+def recovery_windows(text: str):
+    # Scan the entire document, including a single long line. Overlap preserves
+    # names near a window boundary. Generation receives only bounded excerpts.
+    for line in text.splitlines():
+        for offset in range(0, len(line), MAX_OCR_CHARS - 96):
+            yield line[offset:offset + MAX_OCR_CHARS]
+
+
+@dataclass
+class RecoveryBudget:
+    max_calls: int = 4
+    milliseconds: int = 1500
+    calls: int = 0
+    started: float = field(default_factory=time.monotonic)
+
+    def available(self) -> bool:
+        return self.calls < self.max_calls and (time.monotonic() - self.started) * 1000 < self.milliseconds
+
+
 def corroborate_lora_name(
     texto_ocr: str, suggest: Callable[[str], str | None],
+    budget: RecoveryBudget | None = None,
 ) -> dict | None:
-    if len(texto_ocr) > MAX_OCR_CHARS:
+    budget = budget or RecoveryBudget(settings.lora_max_calls, settings.lora_budget_ms)
+    # Multiple distinct identities on packaging are ambiguous; do not let the
+    # generator select one and attach another medicine's dose to it.
+    windows = []
+    try:
+        for window in recovery_windows(texto_ocr):
+            if not budget.available():
+                return None
+            observed = []
+            matches = evidence_candidates(window, budget, observed)
+            windows.append((window, matches, observed))
+    except TimeoutError:
         return None
-    names, compact_names = lora_catalog()
-    matches: dict[str, dict] = {}
-    for line in texto_ocr.splitlines():
-        words = normalize_ocr(line).split()
-        for start, word in enumerate(words):
-            if not word.isalpha():
-                continue
-            for end in range(start + 2, min(start + 6, len(words)) + 1):
-                if not words[end - 1].isalpha():
-                    break
-                matches.update(compact_names.get("".join(words[start:end]), {}))
-    if len(matches) != 1:
+    all_names = set(exact_catalog_identities(normalize_ocr(texto_ocr))).union(*(set(matches) for _, matches, _ in windows))
+    if len(all_names) != 1:
         return None
+    for window, matches, observed in windows:
+        if not matches or not budget.available():
+            continue
+        budget.calls += 1
+        token = GENERATION_DEADLINE.set(budget.started + budget.milliseconds / 1000)
+        try:
+            # Long legal paragraphs dilute generation. Focus on the observed
+            # OCR span, never substitute the catalog answer into the prompt.
+            excerpt = max(observed, key=len) if len(window) > 128 and observed else window
+            suggestion = suggest(excerpt)
+        finally:
+            GENERATION_DEADLINE.reset(token)
+        if (time.monotonic() - budget.started) * 1000 >= budget.milliseconds:
+            return None
+        if not suggestion or not re.fullmatch(r"[^\W\d_]+(?:[ -][^\W\d_]+)*", suggestion):
+            continue
+        proposed = lora_catalog()[0].get(normalize_ocr(suggestion))
+        if proposed and proposed["nome"] in matches:
+            return matches[proposed["nome"]]
+    return None
 
-    suggestion = suggest(texto_ocr)
-    if not suggestion or not re.fullmatch(r"[^\W\d_]+(?:[ -][^\W\d_]+)*", suggestion):
+
+DOSAGE_CANDIDATE_RE = re.compile(
+    r"\b(\d{1,5}(?:[.,]\d+)?)\s*(MCG|MG|G|ML|UI)(?:\s*/\s*(\d{1,3}\s*)?(MCG|MG|G|ML|DOSE))?\b"
+)
+
+
+def extract_all_dosages(normalized_text: str) -> list[tuple[str, int]]:
+    candidates: list[tuple[str, int]] = []
+    for match in DOSAGE_CANDIDATE_RE.finditer(normalized_text):
+        number = match.group(1).replace(",", ".")
+        unit = match.group(2).lower()
+        denom_num = re.sub(r"\s+", "", match.group(3) or "")
+        denom_unit = (match.group(4) or "").lower()
+        value = f"{number}{unit}/{denom_num}{denom_unit}" if denom_unit else f"{number}{unit}"
+        priority = 2 if (denom_unit or unit != "ml") else 1
+        candidates.append((value, priority))
+    return candidates
+
+
+def resolve_prioritized_dosage(candidates: list[tuple[str, int]]) -> Optional[str]:
+    if not candidates:
         return None
-    proposed = names.get(normalize_ocr(suggestion))
-    return matches.get(proposed["nome"]) if proposed else None
+    top_priority = max(priority for _, priority in candidates)
+    distinct = {value for value, priority in candidates if priority == top_priority}
+    return next(iter(distinct)) if len(distinct) == 1 else None
 
 
 def extract_dosage(normalized_text: str) -> Optional[str]:
-    match = re.search(r"\b(\d{1,4}(?:[.,]\d+)?)\s*(MCG|MG|G|ML)\b", normalized_text)
-    if not match:
-        return None
-    number = match.group(1).replace(",", ".")
-    unit = match.group(2).lower()
-    return f"{number}{unit}"
+    return resolve_prioritized_dosage(extract_all_dosages(normalized_text))
 
 
 def extract_expiration(normalized_text: str, today: Optional[date] = None) -> tuple[Optional[str], bool]:
@@ -453,7 +586,9 @@ def parse_verification(
     medicine = find_medicine(normalized)
     if medicine is None and suggest_name is not None:
         medicine = corroborate_lora_name(texto_ocr, suggest_name)
-    dosage = extract_dosage(normalized)
+    # Identity is checked against the entire document above. Strength must come
+    # from its own block, not the first measurement in administrative text.
+    dosage = verification_dosage(texto_ocr, medicine) if medicine else None
     validity, expired = extract_expiration(normalized, today=today)
 
     if medicine is None:
@@ -536,30 +671,215 @@ def extract_recipe_instructions(normalized_text: str) -> Optional[str]:
     return ", ".join(instructions) or None
 
 
+_STANDALONE_NUMBER_RE = re.compile(r"^[0-9OIL]{1,5}(?:[.,][0-9OIL]{1,3})?$")
+_STANDALONE_UNIT_RE = re.compile(
+    r"^(?:MCG|MG|G|ML|UI|RNG|M9|MQ)(?:\s*/\s*(?:\d{1,3}\s*)?(?:MCG|MG|G|ML|DOSE))?$"
+)
+_PACKAGE_DESCRIPTOR_RE = re.compile(
+    r"^(?:MEDICAMENTO\s+GENERICO|GENERICO|SIMILAR|REFERENCIA|LEI\s+N.*|"
+    r"USO\s+(?:ORAL|ADULTO|PEDIATRICO|ADULTO\s+E\s+PEDIATRICO|TOPICO|EXTERNO|DERMATOLOGICO|OFTALMICO|NASAL)|"
+    r"VIA\s+(?:ORAL|TOPICA)|SOLUCAO\s+(?:ORAL|INJETAVEL|NASAL|OFTALMICA)|"
+    r"SUSPENSAO\s+ORAL|EMULSAO\s+ORAL|GOTAS|XAROPE|CREME|POMADA|GEL|SPRAY|AEROSSOL|"
+    r"COMPRIMIDOS?(?:\s+(?:REVESTIDOS?|EFERVESCENTES?|MASTIGAVEIS?|SUBLINGUAIS?|SIMPLES|ORODISPERSIVEIS?))?|"
+    r"CAPSULAS?(?:\s+(?:DURAS?|MOLES?|GELATINOSAS?))?|"
+    r"(?:(?:CONTEM|EMBALAGEM\s+COM)\s+)?\d{1,3}\s+"
+    r"(?:COMPRIMIDOS?|CAPSULAS?|DRAGEAS?|AMPOLAS?|FLACONETES?|FRASCOS?|SACHES?|ENVELOPES?|ADESIVOS?|UNIDADES?)"
+    r"(?:\s+(?:REVESTIDOS?|DURAS?|MOLES?))?)$"
+)
+_PURE_STANDALONE_DOSAGE_RE = re.compile(
+    r"^\d{1,5}(?:[.,]\d+)?\s*(?:MCG|MG|G|ML|UI)(?:\s*/\s*(?:\d{1,3}\s*)?(?:MCG|MG|G|ML|DOSE))?$"
+)
+
+
+def is_package_descriptor_line(normalized: str) -> bool:
+    if re.match(r"^(?:\(\d{1,3}\)|\[\d{1,3}\]|\d{1,3}\s*[.)\-:]|[A-Z][.)]|[-*•●▪‣–—])\s*", normalized):
+        return False
+    return bool(_PACKAGE_DESCRIPTOR_RE.match(normalized.strip()))
+
+
+def medication_lines(text: str) -> list[tuple[str, str]]:
+    raw_segments = [
+        raw.strip()
+        for raw in re.split(
+            r"[\n;]+|\s+(?=(?:\(\d{1,3}\)|\[\d{1,3}\]|"
+            r"\d{1,3}\s*[.)\-:]|[A-Za-z][.)]|[-*•●▪‣–—])\s*[^\W\d_])",
+            text,
+        )
+        if raw.strip()
+    ]
+    merged: list[str] = []
+    idx = 0
+    while idx < len(raw_segments):
+        current = raw_segments[idx]
+        nxt = raw_segments[idx + 1] if idx + 1 < len(raw_segments) else None
+        if (
+            nxt is not None
+            and _STANDALONE_NUMBER_RE.match(strip_accents(current).upper())
+            and _STANDALONE_UNIT_RE.match(strip_accents(nxt).upper())
+        ):
+            merged.append(f"{current} {nxt}")
+            idx += 2
+        else:
+            merged.append(current)
+            idx += 1
+    return [
+        (raw, normalized)
+        for raw in merged
+        if (normalized := normalize_ocr(raw))
+    ]
+
+
+def strip_item_marker(text: str) -> str:
+    return re.sub(
+        r"^\s*(?:\(\d{1,3}\)|\[\d{1,3}\]|\d{1,3}\s*[.)\-:]|[A-Z][.)]|[-*•●▪‣–—])\s*",
+        "",
+        text,
+    ).strip()
+
+
+def is_medication_continuation(normalized: str) -> bool:
+    """Only explicit dose/usage lines may extend a preceding identity block.
+
+    Free text (including a standalone unknown product name) starts a barrier.
+    Markers do not turn unknown names into administration instructions.
+    """
+    text = strip_item_marker(normalized)
+    text = re.sub(r"^(?:DOSE|DOSAGEM|POSOLOGIA|FREQUENCIA)\s*[:\-]?\s*", "", text)
+    dose = re.match(r"\d{1,5}(?:[.,]\d+)?\s*(?:MCG|MG|G|ML|UI)\b", text)
+    if dose:
+        rest = text[dose.end():].strip()
+        if not rest:
+            return True
+        # Preserve printed concentrations and administration after a strength.
+        rest = re.sub(r"^/\s*(?:\d+(?:[.,]\d+)?\s*)?(?:MCG|MG|ML|G|DOSE)\b", "", rest).strip()
+        if not rest:
+            return True
+        text = rest
+    if dose and re.match(r"^(?:VALIDADE|VALID|VAL|VENCIMENTO|VENC|VTO|EXPIRA|EXP|V)\b", text):
+        return True
+    return bool(re.match(
+        r"^(?:(?:TOMAR|USAR|APLICAR|INGERIR)\b|A CADA\s+\d|DE\s+\d+\s+EM\s+\d|"
+        r"\d{1,2}\s*/\s*\d{1,2}\s*H\b|"
+        r"(?:\d{1,2}|UMA|DUAS|TRES)\s*(?:X|VEZ|VEZES|COMPRIMIDOS?|CP|CAPSULAS?|GOTAS?)\b|"
+        r"POR\s+\d|DURANTE\s+\d|APOS\b|ANTES\b|EM JEJUM\b|PELA MANHA\b|"
+        r"A NOITE\b|AO DEITAR\b|USO ORAL\b|VIA ORAL\b|"
+        r"COMPRIMIDOS?\b|CAPSULAS?\b)",
+        text,
+    ))
+
+
+def identity_suffix(normalized: str, medicine: dict) -> str | None:
+    """Find an observed identity span without substituting a catalog answer."""
+    spans = {normalize_ocr(name) for name in (medicine["nome"], *medicine["aliases"])}
+    observed: list[str] = []
+    evidence_candidates(normalized, observed=observed)
+    for span in set(observed):
+        if medicine["nome"] in evidence_candidates(span):
+            spans.add(span)
+    starts = []
+    for span in spans:
+        pattern = r"(?<![A-Z0-9])" + r"\W+".join(map(re.escape, span.split())) + r"(?![A-Z0-9])"
+        if match := re.search(pattern, normalized):
+            starts.append(match.start())
+    return normalized[min(starts):] if starts else None
+
+
+def identity_context(
+    lines: list[tuple[str, str]], index: int, medicine: dict, boundaries: list[bool],
+    first: str | None = None, *, package_layout: bool = False,
+) -> str:
+    # Remove text before the identity even when OCR joins a preface and name
+    # onto one line. In package layout, safely bridge neutral packaging descriptors.
+    if first is None:
+        first = identity_suffix(lines[index][1], medicine)
+    if first is None:
+        return ""
+    block: list[str] = []
+    if package_layout:
+        for back in range(index - 1, max(-1, index - 4), -1):
+            prev_norm = lines[back][1]
+            if identity_suffix(prev_norm, medicine) is not None or find_medicine(prev_norm):
+                break
+            if is_package_descriptor_line(prev_norm):
+                continue
+            if _PURE_STANDALONE_DOSAGE_RE.match(prev_norm.strip()):
+                before = lines[back - 1][1] if back - 1 >= 0 else None
+                if before is None or is_package_descriptor_line(before):
+                    block.append(prev_norm)
+                break
+            break
+    block.append(first)
+    lookahead = 7 if package_layout else 4
+    for following in range(index + 1, min(index + lookahead, len(lines))):
+        line_norm = lines[following][1]
+        allowed_descriptor = package_layout and is_package_descriptor_line(line_norm)
+        if boundaries[following] and not allowed_descriptor:
+            break
+        block.append(strip_item_marker(line_norm))
+    return " ".join(block)
+
+
+def verification_dosage(text: str, medicine: dict) -> str | None:
+    lines = medication_lines(text)
+    boundaries = [not is_medication_continuation(line) for _, line in lines]
+    candidates: list[tuple[str, int]] = []
+    index = 0
+    while index < len(lines):
+        normalized = lines[index][1]
+        if (first := identity_suffix(normalized, medicine)) is not None:
+            context = identity_context(lines, index, medicine, boundaries, first, package_layout=True)
+            candidates.extend(extract_all_dosages(context))
+            index += 1
+            continue
+        if index + 1 < len(lines) and find_medicine(normalized) is None and find_medicine(lines[index + 1][1]) is None:
+            combined_norm = f"{normalized} {lines[index + 1][1]}"
+            if (combined_first := identity_suffix(combined_norm, medicine)) is not None:
+                synthetic_lines = [
+                    *lines[:index],
+                    (f"{lines[index][0]} {lines[index + 1][0]}", combined_norm),
+                    *lines[index + 2:],
+                ]
+                synthetic_boundaries = [
+                    *boundaries[:index],
+                    True,
+                    *boundaries[index + 2:],
+                ]
+                context = identity_context(
+                    synthetic_lines, index, medicine, synthetic_boundaries, combined_first, package_layout=True,
+                )
+                candidates.extend(extract_all_dosages(context))
+                index += 2
+                continue
+        index += 1
+    return resolve_prioritized_dosage(candidates)
+
+
 def parse_recipe(
     texto_ocr: str, *, suggest_name: Callable[[str], str | None] | None = None,
 ) -> ReceitaResponse:
-    lines = [
-        (raw_line, normalized)
-        for raw_line in texto_ocr.splitlines()
-        if (normalized := normalize_ocr(raw_line))
-    ]
+    budget = RecoveryBudget(settings.lora_max_calls, settings.lora_budget_ms)
+    lines = medication_lines(texto_ocr)
     normalized_lines = [normalized for _, normalized in lines]
     detected_medicines = [find_medicine(line) for line in normalized_lines]
-    if suggest_name is not None and len(texto_ocr) <= MAX_OCR_CHARS and not any(detected_medicines):
-        inference_started = False
-
-        def suggest_once(line: str) -> str | None:
-            nonlocal inference_started
-            inference_started = True
-            return suggest_name(line)
-
+    # Bound candidate preparation as well as generation. Unprocessed lines
+    # remain barriers so an exhausted budget cannot leak their dose backwards.
+    candidate_boundaries = [True] * len(lines)
+    for index, (raw, _) in enumerate(lines):
+        if not budget.available():
+            break
+        try:
+            evidence = bool(evidence_candidates(raw, budget))
+            candidate_boundaries[index] = evidence or not is_medication_continuation(lines[index][1])
+        except TimeoutError:
+            break
+    if suggest_name is not None:
         for index, (raw_line, _) in enumerate(lines):
-            detected_medicines[index] = corroborate_lora_name(raw_line, suggest_once)
-            if inference_started:
-                break
+            if detected_medicines[index] is None and candidate_boundaries[index] and budget.available():
+                detected_medicines[index] = corroborate_lora_name(raw_line, suggest_name, budget)
     medicines: list[MedicamentoReceita] = []
     seen: set[str] = set()
+    boundaries = [boundary or detected is not None
+                  for boundary, detected in zip(candidate_boundaries, detected_medicines)]
     for line_index, medicine in enumerate(detected_medicines):
         if not medicine or medicine["nome"] in seen:
             continue
@@ -568,13 +888,7 @@ def parse_recipe(
         # Prescrições costumam colocar nome, dosagem e modo de uso em linhas
         # diferentes. Junta até três linhas seguintes, parando antes do
         # próximo medicamento para não atribuir uma dose ao item errado.
-        block_lines = [normalized_lines[line_index]]
-        for next_index in range(line_index + 1, min(line_index + 4, len(normalized_lines))):
-            next_medicine = detected_medicines[next_index]
-            if next_medicine and next_medicine["nome"] != medicine["nome"]:
-                break
-            block_lines.append(normalized_lines[next_index])
-        context = " ".join(block_lines)
+        context = identity_context(lines, line_index, medicine, boundaries)
 
         medicines.append(
             MedicamentoReceita(
@@ -690,10 +1004,24 @@ async def save_rag_audit(
     question: str,
     sources: list[str],
     latency_ms: float,
-) -> str:
-    """Registra metadados da consulta sem persistir o texto livre ou o device_id."""
+    cost_usd: float,
+    metadata: dict[str, object],
+    response_text: str | None = None,
+) -> RagAuditReceipt:
+    """Registra a resposta fictícia e metadados sem persistir pergunta ou device_id."""
     requester_hash = anonymize_device_id(device_id)
     query_fingerprint = hashlib.sha256(question.encode("utf-8")).hexdigest()
+    response_fingerprint = (
+        hashlib.sha256(response_text.encode("utf-8")).hexdigest()
+        if response_text is not None
+        else None
+    )
+    audit_payload = {
+        "fontes": list(sources),
+        "resposta": response_text,
+        "resposta_sha256": response_fingerprint,
+        "execucao": metadata,
+    }
     if db_pool is not None:
         try:
             async with db_pool.acquire() as connection:
@@ -706,12 +1034,12 @@ async def save_rag_audit(
                     requester_hash,
                     "rag_local",
                     query_fingerprint,
-                    json.dumps(sources, ensure_ascii=False),
+                    json.dumps(audit_payload, ensure_ascii=False, allow_nan=False),
                     latency_ms,
-                    0.0,
+                    cost_usd,
                 )
             if row is not None:
-                return str(row["audit_id"])
+                return RagAuditReceipt(id=str(row["audit_id"]), backend="postgresql", persistida=True)
         except Exception as exc:
             logger.warning("Auditoria PostgreSQL indisponível; usando memória: %s", type(exc).__name__)
 
@@ -724,35 +1052,42 @@ async def save_rag_audit(
                 "operation": "rag_local",
                 "query_fingerprint": query_fingerprint,
                 "sources": list(sources),
+                "response": response_text,
+                "response_sha256": response_fingerprint,
+                "execution": metadata,
                 "requested_at": datetime.now().isoformat(),
                 "latency_ms": latency_ms,
-                "cost_usd": 0.0,
+                "cost_usd": cost_usd,
             }
         )
-    return audit_id
+    return RagAuditReceipt(id=audit_id, backend="memoria", persistida=False)
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     await init_db_pool()
     application.state.local_lora = None
+    application.state.lora_status = ("legacy-incompatible" if settings.lora_adapter_dir is None or settings.lora_gguf_path else "unavailable") if settings.lora_enabled else "disabled"
     try:
         await asyncio.to_thread(lora_catalog)
+        await asyncio.to_thread(recovery_index)
         try:
             await asyncio.to_thread(get_local_rag)
-        except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+        except Exception as error:
             logger.warning("RAG local indisponível no startup (%s)", type(error).__name__)
         if settings.lora_enabled:
-            local_paths = (settings.lora_gguf_path, None) if settings.lora_gguf_path else (None,)
+            local_paths = (settings.lora_gguf_path,) if settings.lora_gguf_path else (None,)
             for model_path in local_paths:
                 runtime_name = "GGUF" if model_path else "FP32"
                 try:
                     application.state.local_lora = await asyncio.to_thread(
                         LocalLora.load, model_path, settings.lora_threads,
+                        **({"adapter_dir": settings.lora_adapter_dir} if settings.lora_adapter_dir else {}),
                     )
                 except Exception as error:
                     logger.warning("LoRA %s indisponível no startup (%s)", runtime_name, type(error).__name__)
                 else:
+                    application.state.lora_status = "ready"
                     logger.info("LoRA local carregado (%s)", runtime_name)
                     break
         yield
@@ -775,6 +1110,16 @@ if settings.cors_origins:
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],
     )
+
+
+@app.middleware("http")
+async def ai_runtime_status(request: Request, call_next):
+    response = await call_next(request)
+    runtime = getattr(request.app.state, "local_lora", None)
+    response.headers["X-GuiaMed-IA"] = getattr(request.app.state, "lora_status", "not-started")
+    if runtime is not None:
+        response.headers["X-GuiaMed-IA-Last-Result"] = runtime.last_result
+    return response
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Sistema"])
@@ -827,30 +1172,80 @@ async def processar_receita(request: ReceitaRequest, http_request: Request) -> R
 
 @app.post("/rag/consultar", response_model=RagResponse, tags=["IA local"])
 async def consultar_rag_local(request: RagRequest) -> RagResponse:
-    """Consulta as bulas fictícias usando somente processamento local."""
+    """Busca + geração local fora do event loop; nunca executa SQL do cliente."""
+    started = time.perf_counter()
+    costs = {
+        "escopo_custo_usd": "cobranca_de_apis_externas",
+        "energia_medida": False,
+        "energia_usd": None,
+        "hardware_usd": None,
+    }
     try:
-        result = get_local_rag().answer(request.pergunta)
-        sources = list(result.sources)
-        audit_id = await save_rag_audit(
-            request.device_id,
-            request.pergunta,
-            sources,
-            result.latency_ms,
+        result = await asyncio.to_thread(
+            lambda: get_local_rag().answer(request.pergunta, prompt_version=request.prompt_version),
         )
-        return RagResponse(
+        if result.prompt_version != request.prompt_version:
+            raise ValueError("RAG prompt version mismatch")
+        total_ms = (time.perf_counter() - started) * 1000
+        # Whitelist metadata. raw_response, prompts and questions never enter audit/logs.
+        metadata = {
+            "busca_ms": result.busca_ms,
+            "geracao_ms": result.geracao_ms,
+            "load_ms": result.load_ms,
+            "total_ms": total_ms,
+            "input_tokens": result.input_tokens,
+            "output_tokens": result.output_tokens,
+            "model": result.model,
+            "revision": result.revision,
+            "mode": result.mode,
+            "fallback": result.mode == "fallback_template",
+            "fallback_reason": result.fallback_reason,
+            "prompt_version": result.prompt_version,
+            "prompt_sha256": result.prompt_sha256,
+            "generation_attempted": result.generation_attempted,
+            "llm_called": result.llm_called,
+            "generator_backend": result.generator_backend,
+            "citation_origin": result.citation_origin,
+            "decoding": result.decoding,
+            "custos": costs,
+        }
+        metadata["geracao_llm_real"] = (
+            result.mode == "llm_grounded" and metadata["llm_called"] and
+            metadata["generator_backend"] == "transformers" and (result.output_tokens or 0) > 0
+        )
+        response = RagResponse(
             resposta=result.response,
-            fontes=sources,
+            fontes=list(result.sources),
             medicamento=result.medicine,
             confianca=result.confidence,
-            prompt_version=result.prompt_version,
-            latencia_ms=result.latency_ms,
+            latencia_ms=total_ms,
             custo_usd=result.cost_usd,
-            auditoria_id=audit_id,
+            auditoria_id="pending",
+            auditoria=RagAuditReceipt(id="pending", backend="memoria", persistida=False),
             entrada_hostil_detectada=result.hostile_input_detected,
+            consulta_sha256=hashlib.sha256(request.pergunta.encode("utf-8")).hexdigest(),
+            **metadata,
         )
     except Exception as exc:
-        logger.exception("Falha ao consultar RAG local")
-        raise HTTPException(status_code=500, detail="Erro ao consultar a base local") from exc
+        total_ms = (time.perf_counter() - started) * 1000
+        logger.warning("Geração RAG indisponível (%s)", type(exc).__name__)
+        receipt = await save_rag_audit(
+            request.device_id, request.pergunta, [], total_ms, 0.0,
+            {"mode": "unavailable", "fallback": False, "prompt_version": request.prompt_version,
+             "total_ms": total_ms, "custos": costs},
+        )
+        raise HTTPException(status_code=503, detail={
+            "mensagem": "A geração local está indisponível. Tente novamente mais tarde.",
+            "mode": "unavailable", "fallback": False,
+            "prompt_version": request.prompt_version,
+            "latencia_ms": total_ms, "custo_usd": 0.0, "custos": costs,
+            "auditoria_id": receipt.id, "auditoria": receipt.model_dump(),
+        }) from None
+    receipt = await save_rag_audit(
+        request.device_id, request.pergunta, response.fontes, response.latencia_ms,
+        response.custo_usd, metadata, response_text=response.resposta,
+    )
+    return response.model_copy(update={"auditoria_id": receipt.id, "auditoria": receipt})
 
 
 @app.post("/rag/demo/alergia", tags=["IA local"])

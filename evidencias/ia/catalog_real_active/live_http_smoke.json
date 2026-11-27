@@ -1,0 +1,61 @@
+﻿{
+    "transport":  "HTTP 127.0.0.1:8000",
+    "database":  "connected",
+    "checks":  [
+                   {
+                       "path":  "/verificar",
+                       "status":  200,
+                       "ia":  "ready",
+                       "response":  {
+                                        "nome":  "Dipirona Sódica",
+                                        "miligramas":  "500mg",
+                                        "validade":  "10/2026",
+                                        "vencido":  true,
+                                        "alerta_alergia":  false,
+                                        "componentes":  [
+                                                            "dipirona",
+                                                            "metamizol"
+                                                        ],
+                                        "posologia":  null,
+                                        "mensagem":  "Medicamento vencido.",
+                                        "perigo":  true
+                                    }
+                   },
+                   {
+                       "path":  "/receita",
+                       "status":  200,
+                       "ia":  "ready",
+                       "response":  {
+                                        "medicamentos":  [
+                                                             {
+                                                                 "nome":  "Omeprazol",
+                                                                 "dosagem":  "20mg",
+                                                                 "frequencia":  "a noite",
+                                                                 "duracao":  null,
+                                                                 "instrucoes":  "a noite"
+                                                             },
+                                                             {
+                                                                 "nome":  "Dipirona Sódica",
+                                                                 "dosagem":  "500mg",
+                                                                 "frequencia":  "a cada 8 horas",
+                                                                 "duracao":  null,
+                                                                 "instrucoes":  null
+                                                             },
+                                                             {
+                                                                 "nome":  "Paracetamol",
+                                                                 "dosagem":  "750mg",
+                                                                 "frequencia":  "a cada 12 horas",
+                                                                 "duracao":  null,
+                                                                 "instrucoes":  null
+                                                             }
+                                                         ],
+                                        "posologia_completa":  "Omeprazol 20mg a noite a noite. Dipirona Sódica 500mg a cada 8 horas. Paracetamol 750mg a cada 12 horas",
+                                        "horarios":  [
+
+                                                     ],
+                                        "mensagem":  "Receita processada com sucesso."
+                                    }
+                   }
+               ],
+    "passed":  true
+}

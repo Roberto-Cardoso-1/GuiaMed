@@ -1,0 +1,148 @@
+test_allergy_and_verification_contract (test_api_contract.ApiContractTests.test_allergy_and_verification_contract) ... 2026-11-26 20:21:16,130 - guiamed - INFO - Catálogo DCB carregado com 10777 denominações
+ok
+test_recipe_contract_preserves_600_mg (test_api_contract.ApiContractTests.test_recipe_contract_preserves_600_mg) ... ok
+test_routes_expose_the_v1_response_models (test_api_contract.ApiContractTests.test_routes_expose_the_v1_response_models) ... ok
+test_only_owner_queries_the_record_and_both_attempts_are_audited (test_demo_perfis.DemoProfilesTest.test_only_owner_queries_the_record_and_both_attempts_are_audited) ... ok
+test_exports_q4_and_preserves_existing_or_partially_written_output (test_local_lora.GgufExportTests.test_exports_q4_and_preserves_existing_or_partially_written_output) ... ok
+test_catalog_name_confirmed_with_dose_validity_and_allergy_from_parser (test_local_lora.LoraParserTests.test_catalog_name_confirmed_with_dose_validity_and_allergy_from_parser) ... ok
+test_recipe_fallback_preserves_the_printed_dose_and_frequency (test_local_lora.LoraParserTests.test_recipe_fallback_preserves_the_printed_dose_and_frequency) ... ok
+test_rejects_hallucination_conflict_or_additional_text (test_local_lora.LoraParserTests.test_rejects_hallucination_conflict_or_additional_text) ... ok
+test_skips_model_for_existing_identity_missing_evidence_or_multiple_candidates (test_local_lora.LoraParserTests.test_skips_model_for_existing_identity_missing_evidence_or_multiple_candidates) ... ok
+test_busy_runtime_and_generation_failure_fall_back (test_local_lora.LoraRuntimeTests.test_busy_runtime_and_generation_failure_fall_back) ... 2026-11-26 20:21:16,397 - guiamed.lora - WARNING - Falha na inferência LoRA (RuntimeError)
+2026-11-26 20:21:16,397 - guiamed.lora - WARNING - Falha na inferência LoRA (RuntimeError)
+ok
+test_invalid_rag_data_does_not_stop_verification (test_local_lora.LoraRuntimeTests.test_invalid_rag_data_does_not_stop_verification) ... C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\httpx\_client.py:680: DeprecationWarning: The 'app' shortcut is now deprecated. Use the explicit style 'transport=WSGITransport(app=...)' instead.
+  warnings.warn(message, DeprecationWarning)
+2026-11-26 20:21:16,424 - guiamed - WARNING - RAG local indisponível no startup (KeyError)
+2026-11-26 20:21:16,428 - httpx - INFO - HTTP Request: POST http://testserver/verificar "HTTP/1.1 200 OK"
+ok
+test_legacy_gguf_is_not_loaded_with_real_catalog_prompt (test_local_lora.LoraRuntimeTests.test_legacy_gguf_is_not_loaded_with_real_catalog_prompt) ... ok
+test_lifespan_prewarms_rag_and_loads_one_model_for_requests (test_local_lora.LoraRuntimeTests.test_lifespan_prewarms_rag_and_loads_one_model_for_requests) ... 2026-11-26 20:21:16,441 - guiamed - INFO - LoRA local carregado (FP32)
+2026-11-26 20:21:16,443 - httpx - INFO - HTTP Request: POST http://testserver/verificar "HTTP/1.1 200 OK"
+2026-11-26 20:21:16,446 - httpx - INFO - HTTP Request: POST http://testserver/verificar "HTTP/1.1 200 OK"
+ok
+test_load_failure_leaves_api_available (test_local_lora.LoraRuntimeTests.test_load_failure_leaves_api_available) ... 2026-11-26 20:21:16,453 - guiamed - WARNING - LoRA FP32 indisponível no startup (FileNotFoundError)
+2026-11-26 20:21:16,455 - httpx - INFO - HTTP Request: POST http://testserver/verificar "HTTP/1.1 200 OK"
+ok
+test_device_identifier_is_anonymized_before_audit (test_local_rag.LocalRagTests.test_device_identifier_is_anonymized_before_audit) ... ok
+test_hostile_text_is_data_and_never_changes_the_rules (test_local_rag.LocalRagTests.test_hostile_text_is_data_and_never_changes_the_rules) ... ok
+test_index_contains_six_sections_for_each_fictitious_medicine (test_local_rag.LocalRagTests.test_index_contains_six_sections_for_each_fictitious_medicine) ... ok
+test_refuses_question_without_grounded_source (test_local_rag.LocalRagTests.test_refuses_question_without_grounded_source) ... ok
+test_retrieves_indication_with_a_verifiable_citation (test_local_rag.LocalRagTests.test_retrieves_indication_with_a_verifiable_citation) ... ok
+test_retrieves_posology_without_inventing_content (test_local_rag.LocalRagTests.test_retrieves_posology_without_inventing_content) ... ok
+test_ambiguous_names_still_refused_and_strength_is_not_assigned (test_medication_blocks.MedicationBlockTests.test_ambiguous_names_still_refused_and_strength_is_not_assigned) ... ok
+test_flattened_known_items_keep_their_own_strengths (test_medication_blocks.MedicationBlockTests.test_flattened_known_items_keep_their_own_strengths) ... ok
+test_inline_item_markers_end_the_block_after_ocr_flattens_lines (test_medication_blocks.MedicationBlockTests.test_inline_item_markers_end_the_block_after_ocr_flattens_lines) ... ok
+test_known_item_after_unknown_block_does_not_take_earlier_strength (test_medication_blocks.MedicationBlockTests.test_known_item_after_unknown_block_does_not_take_earlier_strength) ... ok
+test_long_package_ignores_preface_and_keeps_safety (test_medication_blocks.MedicationBlockTests.test_long_package_ignores_preface_and_keeps_safety) ... C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\anyio\streams\memory.py:360: ResourceWarning: Unclosed <MemoryObjectSendStream at 26506b0d8e0>
+  warnings.warn(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\anyio\streams\memory.py:207: ResourceWarning: Unclosed <MemoryObjectReceiveStream at 26506ef0590>
+  warnings.warn(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\anyio\streams\memory.py:360: ResourceWarning: Unclosed <MemoryObjectSendStream at 26506f0d370>
+  warnings.warn(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\anyio\streams\memory.py:207: ResourceWarning: Unclosed <MemoryObjectReceiveStream at 26506f0d400>
+  warnings.warn(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\anyio\streams\memory.py:360: ResourceWarning: Unclosed <MemoryObjectSendStream at 26506f58410>
+  warnings.warn(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\meu-sistema\.tools\finetuning-venv\Lib\site-packages\anyio\streams\memory.py:207: ResourceWarning: Unclosed <MemoryObjectReceiveStream at 26506f583e0>
+  warnings.warn(
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_lora_recovered_identity_uses_own_block_after_preface (test_medication_blocks.MedicationBlockTests.test_lora_recovered_identity_uses_own_block_after_preface) ... ok
+test_missing_frequency_cannot_come_from_unknown_next_item (test_medication_blocks.MedicationBlockTests.test_missing_frequency_cannot_come_from_unknown_next_item) ... ok
+test_own_dose_and_frequency_survive_unknown_neighbor (test_medication_blocks.MedicationBlockTests.test_own_dose_and_frequency_survive_unknown_neighbor) ... ok
+test_package_joins_only_its_own_multiline_strength (test_medication_blocks.MedicationBlockTests.test_package_joins_only_its_own_multiline_strength) ... ok
+test_package_without_own_strength_does_not_borrow_preface_or_neighbor (test_medication_blocks.MedicationBlockTests.test_package_without_own_strength_does_not_borrow_preface_or_neighbor) ... ok
+test_preface_on_same_line_never_supplies_recipe_dose_or_frequency (test_medication_blocks.MedicationBlockTests.test_preface_on_same_line_never_supplies_recipe_dose_or_frequency) ... ok
+test_recognized_numbered_items_keep_separate_multiline_contexts (test_medication_blocks.MedicationBlockTests.test_recognized_numbered_items_keep_separate_multiline_contexts) ... ok
+test_unknown_header_after_semicolon_is_a_boundary (test_medication_blocks.MedicationBlockTests.test_unknown_header_after_semicolon_is_a_boundary) ... ok
+test_unknown_headers_never_supply_previous_dose_or_frequency (test_medication_blocks.MedicationBlockTests.test_unknown_headers_never_supply_previous_dose_or_frequency) ... ok
+test_unknown_word_cannot_match_only_the_prefix_of_a_usage_verb (test_medication_blocks.MedicationBlockTests.test_unknown_word_cannot_match_only_the_prefix_of_a_usage_verb) ... ok
+test_usage_bullets_and_labels_are_continuations (test_medication_blocks.MedicationBlockTests.test_usage_bullets_and_labels_are_continuations) ... ok
+test_corrects_common_ocr_errors (test_parser.MedicationParserTests.test_corrects_common_ocr_errors) ... ok
+test_corrects_letter_o_in_compact_expiration_stamp (test_parser.MedicationParserTests.test_corrects_letter_o_in_compact_expiration_stamp) ... ok
+test_does_not_treat_manufacturing_stamp_as_expiration (test_parser.MedicationParserTests.test_does_not_treat_manufacturing_stamp_as_expiration) ... ok
+test_fuzzy_matches_anvisa_dcb_without_guessing_short_words (test_parser.MedicationParserTests.test_fuzzy_matches_anvisa_dcb_without_guessing_short_words) ... ok
+test_fuzzy_matches_nimesulida (test_parser.MedicationParserTests.test_fuzzy_matches_nimesulida) ... ok
+test_keeps_ibuprofen_600_mg_and_does_not_invent_expiration (test_parser.MedicationParserTests.test_keeps_ibuprofen_600_mg_and_does_not_invent_expiration) ... ok
+test_loads_broad_official_anvisa_catalog (test_parser.MedicationParserTests.test_loads_broad_official_anvisa_catalog) ... ok
+test_normalization_fixes_numeric_context (test_parser.MedicationParserTests.test_normalization_fixes_numeric_context) ... ok
+test_only_explicit_expiration_is_used (test_parser.MedicationParserTests.test_only_explicit_expiration_is_used) ... ok
+test_partial_allergy_match_sets_danger (test_parser.MedicationParserTests.test_partial_allergy_match_sets_danger) ... ok
+test_reads_common_expiration_label_from_package_bottom (test_parser.MedicationParserTests.test_reads_common_expiration_label_from_package_bottom) ... ok
+test_reads_compact_manufacturing_and_expiration_stamp (test_parser.MedicationParserTests.test_reads_compact_manufacturing_and_expiration_stamp) ... ok
+test_recipe_joins_name_dosage_and_instructions_on_adjacent_lines (test_parser.MedicationParserTests.test_recipe_joins_name_dosage_and_instructions_on_adjacent_lines) ... ok
+test_recipe_preserves_detected_dosage (test_parser.MedicationParserTests.test_recipe_preserves_detected_dosage) ... ok
+test_recipe_stops_context_before_next_medicine (test_parser.MedicationParserTests.test_recipe_stops_context_before_next_medicine) ... ok
+test_recognizes_anvisa_dcb_outside_curated_catalog (test_parser.MedicationParserTests.test_recognizes_anvisa_dcb_outside_curated_catalog) ... ok
+test_recognizes_rosuvastatin_from_front_package (test_parser.MedicationParserTests.test_recognizes_rosuvastatin_from_front_package) ... ok
+test_database_failure_is_explicit_and_does_not_log_input (test_rag_api_integration.RagAuditTests.test_database_failure_is_explicit_and_does_not_log_input) ... ok
+test_memory_receipt_never_claims_persistence_and_hashes_sensitive_input (test_rag_api_integration.RagAuditTests.test_memory_receipt_never_claims_persistence_and_hashes_sensitive_input) ... ok
+test_missing_optional_rag_library_does_not_stop_api_startup (test_rag_api_integration.RagAuditTests.test_missing_optional_rag_library_does_not_stop_api_startup) ... 2026-11-26 20:21:16,678 - guiamed - WARNING - RAG local indisponível no startup (ModuleNotFoundError)
+ok
+test_postgres_uses_only_authorized_function_and_actual_cost (test_rag_api_integration.RagAuditTests.test_postgres_uses_only_authorized_function_and_actual_cost) ... ok
+test_fake_backend_and_refusals_are_never_real_llm_evidence (test_rag_api_integration.RagEndpointTests.test_fake_backend_and_refusals_are_never_real_llm_evidence) ... 2026-11-26 20:21:16,739 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+2026-11-26 20:21:16,759 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+ok
+test_http_rejects_arbitrary_prompts_before_loading_model (test_rag_api_integration.RagEndpointTests.test_http_rejects_arbitrary_prompts_before_loading_model) ... 2026-11-26 20:21:16,804 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 422 Unprocessable Entity"
+2026-11-26 20:21:16,826 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 422 Unprocessable Entity"
+2026-11-26 20:21:16,845 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 422 Unprocessable Entity"
+ok
+test_load_and_generation_run_off_event_loop_and_total_is_audited (test_rag_api_integration.RagEndpointTests.test_load_and_generation_run_off_event_loop_and_total_is_audited) ... 2026-11-26 20:21:16,943 - httpx - INFO - HTTP Request: GET http://test/health "HTTP/1.1 200 OK"
+2026-11-26 20:21:16,955 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+ok
+test_real_local_rag_interface_uses_generator_and_reports_fake_truthfully (test_rag_api_integration.RagEndpointTests.test_real_local_rag_interface_uses_generator_and_reports_fake_truthfully) ... 2026-11-26 20:21:17,010 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+ok
+test_real_local_rag_missing_model_never_hides_fallback_as_llm (test_rag_api_integration.RagEndpointTests.test_real_local_rag_missing_model_never_hides_fallback_as_llm) ... 2026-11-26 20:21:17,068 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+ok
+test_same_question_versions_keep_legacy_contract_and_runtime_metrics (test_rag_api_integration.RagEndpointTests.test_same_question_versions_keep_legacy_contract_and_runtime_metrics) ... 2026-11-26 20:21:17,119 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+2026-11-26 20:21:17,149 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+ok
+test_unavailable_model_has_explicit_audible_fallback_not_llm_success (test_rag_api_integration.RagEndpointTests.test_unavailable_model_has_explicit_audible_fallback_not_llm_success) ... 2026-11-26 20:21:17,189 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 200 OK"
+ok
+test_unexpected_runtime_failure_is_503_audited_without_sensitive_logs (test_rag_api_integration.RagEndpointTests.test_unexpected_runtime_failure_is_503_audited_without_sensitive_logs) ... 2026-11-26 20:21:17,230 - httpx - INFO - HTTP Request: POST http://test/rag/consultar "HTTP/1.1 503 Service Unavailable"
+ok
+test_only_versioned_prompts_are_accepted (test_rag_api_integration.RagRequestContractTests.test_only_versioned_prompts_are_accepted) ... ok
+test_changed_dose_negation_and_fabricated_source_never_pass_guard (test_rag_llm.RagGenerationTests.test_changed_dose_negation_and_fabricated_source_never_pass_guard) ... ok
+test_citation_from_model_is_not_template_attributed (test_rag_llm.RagGenerationTests.test_citation_from_model_is_not_template_attributed) ... ok
+test_control_delimiters_are_escaped_as_data (test_rag_llm.RagGenerationTests.test_control_delimiters_are_escaped_as_data) ... ok
+test_errors_are_explicit_and_do_not_log_input (test_rag_llm.RagGenerationTests.test_errors_are_explicit_and_do_not_log_input) ... ok
+test_forged_hits_and_prompt_path_rejected (test_rag_llm.RagGenerationTests.test_forged_hits_and_prompt_path_rejected) ... ok
+test_freeze_hits_and_execute_distinct_prompts_without_notes (test_rag_llm.RagGenerationTests.test_freeze_hits_and_execute_distinct_prompts_without_notes) ... ok
+test_indication_accepts_first_sentence_prefix_but_never_isolated_tail (test_rag_llm.RagGenerationTests.test_indication_accepts_first_sentence_prefix_but_never_isolated_tail) ... ok
+test_refusals_do_not_call_generator (test_rag_llm.RagGenerationTests.test_refusals_do_not_call_generator) ... ok
+test_timed_out_partial_output_preserved_but_never_accepted (test_rag_llm.RagGenerationTests.test_timed_out_partial_output_preserved_but_never_accepted) ... ok
+test_allowed_sequences_require_full_posology_and_prefix_only_elsewhere (test_rag_llm.RuntimeTests.test_allowed_sequences_require_full_posology_and_prefix_only_elsewhere) ... ok
+test_lazy_singleton_never_loads_at_construction (test_rag_llm.RuntimeTests.test_lazy_singleton_never_loads_at_construction) ... ok
+test_missing_snapshot_cached_without_download (test_rag_llm.RuntimeTests.test_missing_snapshot_cached_without_download) ... ok
+test_absent_model_visible_without_json_changes (test_recovery.RecoveryRegressions.test_absent_model_visible_without_json_changes) ... 2026-11-26 20:21:17,314 - guiamed - WARNING - LoRA FP32 indisponível no startup (ValueError)
+2026-11-26 20:21:17,318 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+ok
+test_curated_plus_dcb_box_is_ambiguous (test_recovery.RecoveryRegressions.test_curated_plus_dcb_box_is_ambiguous) ... ok
+test_deadline_covers_preparation (test_recovery.RecoveryRegressions.test_deadline_covers_preparation) ... ok
+test_exact_plus_broken_dcb_is_also_ambiguous (test_recovery.RecoveryRegressions.test_exact_plus_broken_dcb_is_also_ambiguous) ... ok
+test_failed_or_budget_skipped_item_is_dose_boundary (test_recovery.RecoveryRegressions.test_failed_or_budget_skipped_item_is_dose_boundary) ... ok
+test_generation_stopping_criterion_and_lock_release (test_recovery.RecoveryRegressions.test_generation_stopping_criterion_and_lock_release) ... ok
+test_hallucinated_catalog_item_and_fictitious_name_rejected (test_recovery.RecoveryRegressions.test_hallucinated_catalog_item_and_fictitious_name_rejected) ... ok
+test_instruction_with_catalog_name_is_not_identity_evidence (test_recovery.RecoveryRegressions.test_instruction_with_catalog_name_is_not_identity_evidence) ... ok
+test_loader_rejects_unapproved_or_mismatched_manifest_before_inference (test_recovery.RecoveryRegressions.test_loader_rejects_unapproved_or_mismatched_manifest_before_inference) ... ok
+test_long_window_focus_preserves_broken_ocr_instead_of_injecting_answer (test_recovery.RecoveryRegressions.test_long_window_focus_preserves_broken_ocr_instead_of_injecting_answer) ... ok
+test_multiple_calls_bounded_and_not_only_first_failed_line (test_recovery.RecoveryRegressions.test_multiple_calls_bounded_and_not_only_first_failed_line) ... ok
+test_name_at_end_of_long_single_line_keeps_validity_and_allergy (test_recovery.RecoveryRegressions.test_name_at_end_of_long_single_line_keeps_validity_and_allergy) ... ok
+test_overdue_generated_answer_is_discarded_and_deadline_propagates (test_recovery.RecoveryRegressions.test_overdue_generated_answer_is_discarded_and_deadline_propagates) ... ok
+test_recovers_missing_items_in_partially_recognized_long_recipe (test_recovery.RecoveryRegressions.test_recovers_missing_items_in_partially_recognized_long_recipe) ... ok
+test_recovery_handles_one_edit_and_spacing (test_recovery.RecoveryRegressions.test_recovery_handles_one_edit_and_spacing) ... ok
+test_semicolon_recipe_separates_doses (test_recovery.RecoveryRegressions.test_semicolon_recipe_separates_doses) ... ok
+test_short_catalog_alias_still_blocks_ambiguous_recovery (test_recovery.RecoveryRegressions.test_short_catalog_alias_still_blocks_ambiguous_recovery) ... ok
+test_substring_is_not_a_name (test_recovery.RecoveryRegressions.test_substring_is_not_a_name) ... ok
+test_unknown_dosed_header_cannot_supply_previous_dose (test_recovery.RecoveryRegressions.test_unknown_dosed_header_cannot_supply_previous_dose) ... ok
+
+----------------------------------------------------------------------
+Ran 97 tests in 1.438s
+
+OK

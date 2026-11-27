@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import kotlin.math.min
 
 class VibrationManager(private val context: Context) {
 
@@ -21,7 +20,20 @@ class VibrationManager(private val context: Context) {
 
     fun vibrateShort() = vibrateOnce(50)
 
+    fun vibrateFocusTick() {
+        val amplitude = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator.hasAmplitudeControl()) {
+            85
+        } else {
+            VibrationEffect.DEFAULT_AMPLITUDE
+        }
+        vibrateOnce(25, amplitude)
+    }
+
     fun vibrateDoubleShort() = vibratePattern(longArrayOf(0, 50, 100, 50))
+
+    fun vibrateGuidance() = vibrateOnce(110)
+
+    fun vibrateFlipBox() = vibratePattern(longArrayOf(0, 140, 90, 60))
 
     fun vibrateLong() = vibrateOnce(300)
 
@@ -31,9 +43,10 @@ class VibrationManager(private val context: Context) {
 
     fun vibrateSuccess() = vibratePattern(longArrayOf(0, 100, 100, 100, 100, 200))
 
-    private fun vibrateOnce(duration: Long) {
+    private fun vibrateOnce(duration: Long, amplitude: Int = VibrationEffect.DEFAULT_AMPLITUDE) {
+        if (!vibrator.hasVibrator()) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+            vibrator.vibrate(VibrationEffect.createOneShot(duration, amplitude))
         } else {
             @Suppress("DEPRECATION")
             vibrator.vibrate(duration)
@@ -41,6 +54,7 @@ class VibrationManager(private val context: Context) {
     }
 
     private fun vibratePattern(pattern: LongArray) {
+        if (!vibrator.hasVibrator()) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
         } else {
